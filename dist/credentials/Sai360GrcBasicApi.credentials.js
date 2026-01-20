@@ -4,14 +4,15 @@ exports.Sai360GrcBasicApi = void 0;
 class Sai360GrcBasicApi {
     constructor() {
         this.name = 'sai360GrcBasicApi';
-        this.displayName = 'SAI360 GRC API (Basic Auth)';
-        this.documentationUrl = '';
+        this.displayName = 'SAI360 GRC API (Basic Auth) API';
+        this.icon = { light: 'file:sai360logo.svg', dark: 'file:sai360logo.dark.svg' };
+        this.documentationUrl = 'https://github.com/antonlissone/n8n-nodes-grc';
         this.properties = [
             {
-                displayName: 'Base URL',
+                displayName: 'Base URL (with context e.g. /bwise if applicable)',
                 name: 'baseUrl',
                 type: 'string',
-                default: 'https://customer.sai360.net/bwise',
+                default: 'https://customer.sai360.net',
                 required: true,
             },
             {

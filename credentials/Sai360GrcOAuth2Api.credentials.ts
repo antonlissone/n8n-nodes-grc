@@ -5,7 +5,9 @@ export class Sai360GrcOAuth2Api implements ICredentialType {
 
 	extends = ['oAuth2Api'];
 
-	displayName = 'SAI360 GRC API (oAuth2)';
+	icon = { light: 'file:sai360logo.svg', dark: 'file:sai360logo.dark.svg' } as const;
+
+	displayName = 'SAI360 GRC OAuth2 API';
 
 	// Link to your community node's README
 	documentationUrl = 'https://github.com/org/@sai360/-grc?tab=readme-ov-file#credentials';

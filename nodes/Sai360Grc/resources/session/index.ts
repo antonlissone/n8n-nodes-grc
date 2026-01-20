@@ -23,19 +23,19 @@ export const sessionDescription: INodeProperties[] = [
 				name: 'Logout',
 				value: 'logout',
 				action: 'Logout',
-				description: 'Logout',
+
 			},
 			{
 				name: 'Retrieve Log',
 				value: 'getLog',
-				action: 'Retrieve Log',
-				description: 'Retrieve Log',
+				action: 'Retrieve log',
+
 			},
 			{
 				name: 'Get Version Info',
 				value: 'getVersionInfo',
-				action: 'Get Version Info',
-				description: 'Get Version Info',
+				action: 'Get version info',
+
 			},
 		],
 		default: 'getLog',

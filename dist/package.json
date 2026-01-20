@@ -1,19 +1,19 @@
 {
     "name": "@sai360/n8n-nodes-grc",
     "version": "0.1.0",
-    "description": "",
+    "description": "n8n community nodes for SAI360 GRC API integration",
     "license": "MIT",
-    "homepage": "",
+    "homepage": "https://github.com/sai360/n8n-nodes-grc",
     "keywords": [
         "n8n-community-node-package"
     ],
     "author": {
-        "name": "",
-        "email": ""
+        "name": "SAI360",
+        "email": "support@sai360.com"
     },
     "repository": {
         "type": "git",
-        "url": "https://github.com/<...>/n8n-nodes-<...>.git"
+        "url": "https://github.com/sai360/n8n-nodes-grc.git"
     },
     "scripts": {
         "build": "n8n-node build",
@@ -31,7 +31,8 @@
         "n8nNodesApiVersion": 1,
         "strict": true,
         "credentials": [
-            "dist/credentials/Sai360GrcOAuth2Api.credentials.js"
+            "dist/credentials/Sai360GrcOAuth2Api.credentials.js",
+            "dist/credentials/Sai360GrcBasicApi.credentials.js"
         ],
         "nodes": [
             "dist/nodes/Sai360Grc/Sai360Grc.node.js"
@@ -48,9 +49,6 @@
         "typescript": "5.9.2"
     },
     "dependencies": {
-        "audit": "^0.0.6",
-        "cheerio": "^1.1.2",
-        "fix": "^0.0.3",
         "n8n-core": "^1.0.0",
         "n8n-workflow": "^1.0.0"
     }

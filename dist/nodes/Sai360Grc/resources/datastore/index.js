@@ -52,7 +52,7 @@ exports.datastoreDescription = [
         },
         options: [
             {
-                name: 'Prime for execution (paginated)',
+                name: 'Prime for Execution (Paginated)',
                 value: 'primeForPagination',
                 action: 'Prime for execution',
                 description: 'Prime datastore for execution (paginated)',
@@ -60,7 +60,7 @@ exports.datastoreDescription = [
             {
                 name: 'Direct Execute',
                 value: 'directExecute',
-                action: 'Direct Execute',
+                action: 'Direct execute',
                 description: 'Directly execute datastore query and retrieve results',
             },
         ],

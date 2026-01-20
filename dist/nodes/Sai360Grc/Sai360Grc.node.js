@@ -6,6 +6,7 @@ const datastore_1 = require("./resources/datastore");
 const session_1 = require("./resources/session");
 const workflow_1 = require("./resources/workflow");
 const router_1 = require("./router");
+const transport_1 = require("../../transport");
 class Sai360Grc {
     constructor() {
         this.description = {
@@ -73,6 +74,21 @@ class Sai360Grc {
                 ...datastore_1.datastoreDescription,
                 ...session_1.sessionDescription,
             ],
+        };
+        this.methods = {
+            loadOptions: {
+                async getDatastores() {
+                    const response = await transport_1.SAI360ApiRequest.call(this, 'GET', '/api/datastoreservice/datastores');
+                    if (!(response === null || response === void 0 ? void 0 : response.entries)) {
+                        return [];
+                    }
+                    return response.entries.map((ds) => ({
+                        name: `${ds.label} (${ds.identifier})`,
+                        value: ds.identifier,
+                        description: `Type: ${ds.type} | ID: ${ds.objectId}`,
+                    }));
+                },
+            },
         };
     }
     async execute() {

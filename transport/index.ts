@@ -18,7 +18,6 @@ export async function SAI360ApiRequest(
 	endpoint: string,
 	body: IDataObject = {},
 	qs: IDataObject = {},
-	headers: IDataObject = {},
 	optionsOverrides: IDataObject = { json: true },
 ) {
 	// Try to get either Basic or OAuth2 credentials
@@ -59,9 +58,6 @@ export async function SAI360ApiRequest(
 	// AUTH SWITCH
 	// =========================
 	if (authentication === 'oauth2') {
-
-		console.log('Making OAuth2 request to', finalURL);
-
 		// only pass body, qs, method, url
 		const oauthOptions: IHttpRequestOptions = {
 			method,
@@ -77,9 +73,8 @@ export async function SAI360ApiRequest(
 			delete oauthOptions.body;
 		}
 
-		// requestWithAuthentication will automatically attach the OAuth2 token
-		console.log('OAuth2 Options:', JSON.stringify(oauthOptions));
-		const response = await this.helpers.requestWithAuthentication.call(
+		// httpRequestWithAuthentication will automatically attach the OAuth2 token
+		const response = await this.helpers.httpRequestWithAuthentication.call(
 			this,
 			'sai360GrcOAuth2Api',
 			oauthOptions,
@@ -103,9 +98,9 @@ export async function SAI360ApiRequest(
 				baseUrl,
 				credentials.username as string,
 				credentials.password as string,
-			);
+			) as IDataObject;
 
-			sessionId = (loginResponse as any).sessionid ?? (loginResponse as any).token;
+			sessionId = (loginResponse.sessionid as string) ?? (loginResponse.token as string);
 
 			if (!sessionId) {
 				throw new Error('SAI360 login did not return a sessionId or token');
@@ -124,9 +119,10 @@ export async function SAI360ApiRequest(
 		// Make the request
 		try {
 			return await this.helpers.httpRequest!(options);
-		} catch (err: any) {
+		} catch (err: unknown) {
+			const error = err as { statusCode?: number };
 			// Retry once if session expired
-			if (err.statusCode === 401 || err.statusCode === 403) {
+			if (error.statusCode === 401 || error.statusCode === 403) {
 				delete staticData.sessionId;
 
 				const loginResponse = await SAI360ApiLogin.call(
@@ -134,9 +130,9 @@ export async function SAI360ApiRequest(
 					baseUrl,
 					credentials.username as string,
 					credentials.password as string,
-				);
+				) as IDataObject;
 
-				sessionId = (loginResponse as any).sessionid ?? (loginResponse as any).token;
+				sessionId = (loginResponse.sessionid as string) ?? (loginResponse.token as string);
 				if (!sessionId) throw new Error('SAI360 login retry failed');
 
 				staticData.sessionId = sessionId;

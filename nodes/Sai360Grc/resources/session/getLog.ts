@@ -3,7 +3,8 @@ import { SAI360ApiRequest } from '../../../../transport/';
 
 export const sessionGetLogDescription: INodeProperties[] = [];
 
-export async function execute(this: IExecuteFunctions, index: number) {
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+export async function execute(this: IExecuteFunctions, _index: number) {
 	const endpoint = '/api/log';
 
 	const response = await SAI360ApiRequest.call(this, 'GET', endpoint, undefined, {

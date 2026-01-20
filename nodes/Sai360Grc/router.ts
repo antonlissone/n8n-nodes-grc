@@ -6,12 +6,16 @@ import * as workflow from './resources/workflow';
 import * as session from './resources/session';
 
 import type { SAI360 } from './node.type';
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type ResourceModule = Record<string, { execute: (this: IExecuteFunctions, index: number) => Promise<any> }>;
+
 export async function router(this: IExecuteFunctions) {
 	const items = this.getInputData();
 	const returnData: INodeExecutionData[] = [];
 
 	const resource = this.getNodeParameter<SAI360>('resource', 0) as string;
-	const operation = this.getNodeParameter('operation', 0);
+	const operation = this.getNodeParameter('operation', 0) as string;
 
 	const sai360 = { resource, operation } as SAI360;
 
@@ -21,13 +25,13 @@ export async function router(this: IExecuteFunctions) {
 
 			switch (sai360.resource) {
 				case 'datastore':
-					responseData = await (datastore as any)[sai360.operation].execute.call(this, i);
+					responseData = await (datastore as unknown as ResourceModule)[sai360.operation].execute.call(this, i);
 					break;
 				case 'session':
-					responseData = await (session as any)[sai360.operation].execute.call(this, i);
+					responseData = await (session as unknown as ResourceModule)[sai360.operation].execute.call(this, i);
 					break;
 				case 'workflow':
-					responseData = await (workflow as any)[sai360.operation].execute.call(this, i);
+					responseData = await (workflow as unknown as ResourceModule)[sai360.operation].execute.call(this, i);
 					break;
 				default:
 					throw new NodeOperationError(this.getNode(), `The resource "${resource}" is not known`);

@@ -2,7 +2,7 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.SAI360ApiRequest = SAI360ApiRequest;
 exports.SAI360ApiLogin = SAI360ApiLogin;
-async function SAI360ApiRequest(method, endpoint, body = {}, qs = {}, headers = {}, optionsOverrides = { json: true }) {
+async function SAI360ApiRequest(method, endpoint, body = {}, qs = {}, optionsOverrides = { json: true }) {
     var _a, _b;
     const basicCreds = await this.getCredentials('sai360GrcBasicApi').catch(() => undefined);
     const oauthCreds = await this.getCredentials('sai360GrcOAuth2Api').catch(() => undefined);
@@ -33,7 +33,6 @@ async function SAI360ApiRequest(method, endpoint, body = {}, qs = {}, headers = 
         delete options.body;
     }
     if (authentication === 'oauth2') {
-        console.log('Making OAuth2 request to', finalURL);
         const oauthOptions = {
             method,
             url: finalURL,
@@ -45,8 +44,7 @@ async function SAI360ApiRequest(method, endpoint, body = {}, qs = {}, headers = 
         if (!body || Object.keys(body).length === 0) {
             delete oauthOptions.body;
         }
-        console.log('OAuth2 Options:', JSON.stringify(oauthOptions));
-        const response = await this.helpers.requestWithAuthentication.call(this, 'sai360GrcOAuth2Api', oauthOptions);
+        const response = await this.helpers.httpRequestWithAuthentication.call(this, 'sai360GrcOAuth2Api', oauthOptions);
         return response;
     }
     if (authentication === 'basic') {
@@ -68,7 +66,8 @@ async function SAI360ApiRequest(method, endpoint, body = {}, qs = {}, headers = 
             return await this.helpers.httpRequest(options);
         }
         catch (err) {
-            if (err.statusCode === 401 || err.statusCode === 403) {
+            const error = err;
+            if (error.statusCode === 401 || error.statusCode === 403) {
                 delete staticData.sessionId;
                 const loginResponse = await SAI360ApiLogin.call(this, baseUrl, credentials.username, credentials.password);
                 sessionId = (_b = loginResponse.sessionid) !== null && _b !== void 0 ? _b : loginResponse.token;

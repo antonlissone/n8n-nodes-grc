@@ -9,7 +9,7 @@ const showOnlyForDatastorePrimeForPagination = {
 };
 exports.datastorePrimeForPaginationDescription = [
     {
-        displayName: 'Datastore Id',
+        displayName: 'Datastore ID',
         name: 'datastoreId',
         type: 'string',
         displayOptions: {

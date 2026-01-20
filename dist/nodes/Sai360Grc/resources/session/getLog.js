@@ -4,7 +4,7 @@ exports.sessionGetLogDescription = void 0;
 exports.execute = execute;
 const transport_1 = require("../../../../transport/");
 exports.sessionGetLogDescription = [];
-async function execute(index) {
+async function execute(_index) {
     const endpoint = '/api/log';
     const response = await transport_1.SAI360ApiRequest.call(this, 'GET', endpoint, undefined, {
         Accept: 'text/plain',

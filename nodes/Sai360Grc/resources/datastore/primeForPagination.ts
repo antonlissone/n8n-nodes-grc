@@ -9,7 +9,7 @@ const showOnlyForDatastorePrimeForPagination = {
 
 export const datastorePrimeForPaginationDescription: INodeProperties[] = [
 	{
-		displayName: 'Datastore Id',
+		displayName: 'Datastore ID',
 		name: 'datastoreId',
 		type: 'string',
 		displayOptions: {

@@ -5,7 +5,8 @@ class Sai360GrcOAuth2Api {
     constructor() {
         this.name = 'sai360GrcOAuth2Api';
         this.extends = ['oAuth2Api'];
-        this.displayName = 'SAI360 GRC API (oAuth2)';
+        this.icon = { light: 'file:sai360logo.svg', dark: 'file:sai360logo.dark.svg' };
+        this.displayName = 'SAI360 GRC OAuth2 API';
         this.documentationUrl = 'https://github.com/org/@sai360/-grc?tab=readme-ov-file#credentials';
         this.properties = [
             {

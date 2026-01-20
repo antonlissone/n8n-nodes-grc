@@ -1,3 +1,3 @@
 import type { IHttpRequestMethods, IDataObject, IExecuteFunctions, IExecuteSingleFunctions, ILoadOptionsFunctions, IPollFunctions } from 'n8n-workflow';
-export declare function SAI360ApiRequest(this: IExecuteFunctions | IExecuteSingleFunctions | ILoadOptionsFunctions | IPollFunctions, method: IHttpRequestMethods, endpoint: string, body?: IDataObject, qs?: IDataObject, headers?: IDataObject, optionsOverrides?: IDataObject): Promise<any>;
+export declare function SAI360ApiRequest(this: IExecuteFunctions | IExecuteSingleFunctions | ILoadOptionsFunctions | IPollFunctions, method: IHttpRequestMethods, endpoint: string, body?: IDataObject, qs?: IDataObject, optionsOverrides?: IDataObject): Promise<any>;
 export declare function SAI360ApiLogin(this: IExecuteFunctions | IExecuteSingleFunctions | ILoadOptionsFunctions | IPollFunctions, baseUrl: string, username: string, password: string): Promise<any>;

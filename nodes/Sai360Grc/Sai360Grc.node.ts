@@ -1,8 +1,20 @@
-import { NodeConnectionTypes, type INodeType, type INodeTypeDescription, type IExecuteFunctions } from 'n8n-workflow';
+import { NodeConnectionTypes, type INodeType, type INodeTypeDescription, type IExecuteFunctions, type ILoadOptionsFunctions } from 'n8n-workflow';
 import { datastoreDescription } from './resources/datastore';
 import { sessionDescription } from './resources/session';
 import { workflowDescription } from './resources/workflow';
 import { router } from './router';
+import { SAI360ApiRequest } from '../../transport';
+
+interface DatastoreEntry {
+	identifier: string;
+	label: string;
+	type: string;
+	objectId: string;
+}
+
+interface DatastoresResponse {
+	entries: DatastoreEntry[];
+}
 
 export class Sai360Grc implements INodeType {
 	description: INodeTypeDescription = {
@@ -70,6 +82,28 @@ export class Sai360Grc implements INodeType {
 			...datastoreDescription,
 			...sessionDescription,
 		],
+	};
+
+	methods = {
+		loadOptions: {
+			async getDatastores(this: ILoadOptionsFunctions) {
+				const response = await SAI360ApiRequest.call(
+					this,
+					'GET',
+					'/api/datastoreservice/datastores',
+				) as DatastoresResponse;
+
+				if (!response?.entries) {
+					return [];
+				}
+
+				return response.entries.map((ds: DatastoreEntry) => ({
+					name: `${ds.label} (${ds.identifier})`,
+					value: ds.identifier,
+					description: `Type: ${ds.type} | ID: ${ds.objectId}`,
+				}));
+			},
+		},
 	};
 
 	async execute(this: IExecuteFunctions) {

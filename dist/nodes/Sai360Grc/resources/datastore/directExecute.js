@@ -9,9 +9,12 @@ const showOnlyForDatastoreDirectExecute = {
 };
 exports.datastoreDirectExecuteDescription = [
     {
-        displayName: 'Datastore Id',
+        displayName: 'Datastore Name or ID',
         name: 'datastoreId',
-        type: 'string',
+        type: 'options',
+        typeOptions: {
+            loadOptionsMethod: 'getDatastores',
+        },
         displayOptions: {
             show: {
                 ...showOnlyForDatastoreDirectExecute,
@@ -19,8 +22,7 @@ exports.datastoreDirectExecuteDescription = [
         },
         default: '',
         required: true,
-        placeholder: 'Solutions_COI_Disclosures',
-        description: 'Datastore Identifier to execute and retrieve results from',
+        description: 'Select the datastore to execute and retrieve results from. Choose from the list, or specify an ID using an <a href="https://docs.n8n.io/code/expressions/">expression</a>.',
     },
 ];
 async function execute(index) {
