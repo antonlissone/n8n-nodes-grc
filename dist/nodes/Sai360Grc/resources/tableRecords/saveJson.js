@@ -64,7 +64,7 @@ async function execute(index) {
             records = [records];
         }
     }
-    catch (e) {
+    catch {
         throw new Error('Invalid JSON in Records field');
     }
     let endpoint = `/api/modelinstance/${encodeURIComponent(tableName)}/json`;

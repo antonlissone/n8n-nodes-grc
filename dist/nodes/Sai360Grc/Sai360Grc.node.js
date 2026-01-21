@@ -61,7 +61,7 @@ class Sai360Grc {
                             value: 'datastore',
                         },
                         {
-                            name: 'Table Records',
+                            name: 'Table Record',
                             value: 'tableRecords',
                         },
                         {
