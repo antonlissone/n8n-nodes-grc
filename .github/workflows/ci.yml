@@ -17,9 +17,15 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '22'
+          cache: 'npm'
+
+      - name: Clear npm cache
+        run: npm cache clean --force
 
       - name: Install dependencies
-        run: 'npm ci'
+        run: npm ci --prefer-offline --no-audit
+        env:
+          npm_config_loglevel: warn
 
       - name: Run lint
         run: 'npm run lint'
