@@ -35,6 +35,7 @@ var __importStar = (this && this.__importStar) || (function () {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.router = router;
 const n8n_workflow_1 = require("n8n-workflow");
+const tableRecords = __importStar(require("./resources/tableRecords"));
 const datastore = __importStar(require("./resources/datastore"));
 const workflow = __importStar(require("./resources/workflow"));
 const session = __importStar(require("./resources/session"));
@@ -49,6 +50,9 @@ async function router() {
         try {
             let responseData;
             switch (sai360.resource) {
+                case 'tableRecords':
+                    responseData = await tableRecords[sai360.operation].execute.call(this, i);
+                    break;
                 case 'datastore':
                     responseData = await datastore[sai360.operation].execute.call(this, i);
                     break;

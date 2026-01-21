@@ -8,6 +8,21 @@ import type {
 	IPollFunctions,
 } from 'n8n-workflow';
 
+export interface HttpRequestDetails {
+	request: {
+		method: IHttpRequestMethods;
+		url: string;
+		headers: IDataObject;
+		body?: IDataObject | string;
+	};
+	response: {
+		statusCode?: number;
+		headers?: IDataObject;
+		body: unknown;
+		isError?: boolean;
+	};
+}
+
 /**
  * Unified SAI360 API request helper.
  * Automatically handles Basic Auth (session) or OAuth2 credentials.
@@ -20,6 +35,21 @@ export async function SAI360ApiRequest(
 	qs: IDataObject = {},
 	optionsOverrides: IDataObject = { json: true },
 ) {
+	const result = await SAI360ApiRequestWithDetails.call(this, method, endpoint, body, qs, optionsOverrides);
+	return result.response.body;
+}
+
+/**
+ * SAI360 API request that returns full HTTP details (headers, status, etc.)
+ */
+export async function SAI360ApiRequestWithDetails(
+	this: IExecuteFunctions | IExecuteSingleFunctions | ILoadOptionsFunctions | IPollFunctions,
+	method: IHttpRequestMethods,
+	endpoint: string,
+	body: IDataObject = {},
+	qs: IDataObject = {},
+	optionsOverrides: IDataObject = { json: true },
+): Promise<HttpRequestDetails> {
 	// Try to get either Basic or OAuth2 credentials
 	const basicCreds = await this.getCredentials('sai360GrcBasicApi').catch(() => undefined);
 	const oauthCreds = await this.getCredentials('sai360GrcOAuth2Api').catch(() => undefined);
@@ -40,13 +70,22 @@ export async function SAI360ApiRequest(
 	const baseUrl = credentials.baseUrl as string;
 	const finalURL = `${baseUrl}${endpoint}`;
 
+	// Build base request headers
+	const baseHeaders: IDataObject = {
+		'Accept': 'application/json',
+		...(optionsOverrides.headers as IDataObject || {}),
+	};
+
 	const options: IHttpRequestOptions = {
 		method,
 		url: finalURL,
 		body,
 		qs,
 		json: true,
+		returnFullResponse: true, // Get full response with headers and status
+		ignoreHttpStatusErrors: true, // Don't throw on 4xx/5xx - capture the response
 		...optionsOverrides,
+		headers: baseHeaders,
 	};
 
 	// Remove empty body
@@ -54,18 +93,65 @@ export async function SAI360ApiRequest(
 		delete options.body;
 	}
 
+	// Helper to safely extract headers (avoid circular references)
+	const safeExtractHeaders = (headers: unknown): IDataObject | undefined => {
+		if (!headers || typeof headers !== 'object') return undefined;
+		try {
+			// Only extract simple key-value pairs from headers
+			const safeHeaders: IDataObject = {};
+			for (const [key, value] of Object.entries(headers as Record<string, unknown>)) {
+				if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') {
+					safeHeaders[key] = value;
+				} else if (Array.isArray(value)) {
+					safeHeaders[key] = value.filter(v => typeof v === 'string' || typeof v === 'number').join(', ');
+				}
+			}
+			return Object.keys(safeHeaders).length > 0 ? safeHeaders : undefined;
+		} catch {
+			return undefined;
+		}
+	};
+
+	// Helper to build HttpRequestDetails from response
+	const buildDetails = (
+		requestHeaders: IDataObject,
+		requestBody: IDataObject | string | undefined,
+		fullResponse: IDataObject,
+	): HttpRequestDetails => {
+		const statusCode = fullResponse.statusCode as number | undefined;
+		const isError = statusCode ? statusCode >= 400 : false;
+		return {
+			request: {
+				method,
+				url: finalURL,
+				headers: requestHeaders,
+				body: requestBody,
+			},
+			response: {
+				statusCode,
+				headers: safeExtractHeaders(fullResponse.headers),
+				body: fullResponse.body,
+				isError,
+			},
+		};
+	};
+
 	// =========================
 	// AUTH SWITCH
 	// =========================
 	if (authentication === 'oauth2') {
-		// only pass body, qs, method, url
+		const oauthHeaders: IDataObject = { ...baseHeaders };
+
 		const oauthOptions: IHttpRequestOptions = {
 			method,
 			url: finalURL,
 			body,
 			qs,
 			json: true,
+			returnFullResponse: true,
+			ignoreHttpStatusErrors: true, // Don't throw on 4xx/5xx - capture the response
 			...optionsOverrides,
+			headers: oauthHeaders,
 		};
 
 		// Remove empty body
@@ -74,15 +160,19 @@ export async function SAI360ApiRequest(
 		}
 
 		// httpRequestWithAuthentication will automatically attach the OAuth2 token
-		const response = await this.helpers.httpRequestWithAuthentication.call(
+		const fullResponse = await this.helpers.httpRequestWithAuthentication.call(
 			this,
 			'sai360GrcOAuth2Api',
 			oauthOptions,
+		) as IDataObject;
+
+		// Note: OAuth2 headers may be modified by n8n, we capture what we can
+		return buildDetails(
+			{ ...oauthHeaders, Authorization: 'Bearer [OAUTH2_TOKEN]' },
+			body && Object.keys(body).length > 0 ? body : undefined,
+			fullResponse,
 		);
-
-		return response;
 	}
-
 
 	if (authentication === 'basic') {
 		// Get workflow-level static data
@@ -111,14 +201,20 @@ export async function SAI360ApiRequest(
 		}
 
 		// Add session header
-		options.headers = {
-			...options.headers,
+		const requestHeaders: IDataObject = {
+			...baseHeaders,
 			'bwise-session': sessionId,
 		};
+		options.headers = requestHeaders;
 
 		// Make the request
 		try {
-			return await this.helpers.httpRequest!(options);
+			const fullResponse = await this.helpers.httpRequest!(options) as IDataObject;
+			return buildDetails(
+				requestHeaders,
+				body && Object.keys(body).length > 0 ? body : undefined,
+				fullResponse,
+			);
 		} catch (err: unknown) {
 			const error = err as { statusCode?: number };
 			// Retry once if session expired
@@ -136,15 +232,23 @@ export async function SAI360ApiRequest(
 				if (!sessionId) throw new Error('SAI360 login retry failed');
 
 				staticData.sessionId = sessionId;
-				options.headers['bwise-session'] = sessionId;
+				const retryHeaders: IDataObject = {
+					...baseHeaders,
+					'bwise-session': sessionId,
+				};
+				options.headers = retryHeaders;
 
-				return await this.helpers.httpRequest!(options);
+				const fullResponse = await this.helpers.httpRequest!(options) as IDataObject;
+				return buildDetails(
+					retryHeaders,
+					body && Object.keys(body).length > 0 ? body : undefined,
+					fullResponse,
+				);
 			}
 
 			throw err;
 		}
 	}
-
 
 	throw new Error(`Unsupported auth type: ${authentication}`);
 }

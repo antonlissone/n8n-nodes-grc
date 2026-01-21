@@ -26,8 +26,17 @@ exports.datastorePrimeForPaginationDescription = [
 async function execute(index) {
     const datastoreId = this.getNodeParameter('datastoreId', index);
     const endpoint = '/api/griddata/query/datastore!' + encodeURIComponent(datastoreId);
-    const responseData = await transport_1.SAI360ApiRequest.call(this, 'POST', endpoint);
-    const executionData = this.helpers.constructExecutionMetaData(this.helpers.returnJsonArray(responseData), { itemData: { item: index } });
+    const httpDetails = await transport_1.SAI360ApiRequestWithDetails.call(this, 'POST', endpoint);
+    const isError = httpDetails.response.isError || false;
+    const statusCode = httpDetails.response.statusCode || 0;
+    const responseBody = httpDetails.response.body;
+    if (isError) {
+        const errorMessage = typeof responseBody === 'object' && responseBody !== null
+            ? JSON.stringify(responseBody)
+            : String(responseBody);
+        throw new Error(`Request failed with status ${statusCode}: ${errorMessage}`);
+    }
+    const executionData = this.helpers.constructExecutionMetaData(this.helpers.returnJsonArray([responseBody]), { itemData: { item: index } });
     return executionData;
 }
 //# sourceMappingURL=primeForPagination.js.map

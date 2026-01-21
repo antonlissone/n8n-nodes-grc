@@ -1,6 +1,7 @@
 import type { IExecuteFunctions, INodeExecutionData } from 'n8n-workflow';
 import { NodeApiError, NodeOperationError } from 'n8n-workflow';
 
+import * as tableRecords from './resources/tableRecords';
 import * as datastore from './resources/datastore';
 import * as workflow from './resources/workflow';
 import * as session from './resources/session';
@@ -24,6 +25,9 @@ export async function router(this: IExecuteFunctions) {
 			let responseData: INodeExecutionData[][];
 
 			switch (sai360.resource) {
+				case 'tableRecords':
+					responseData = await (tableRecords as unknown as ResourceModule)[sai360.operation].execute.call(this, i);
+					break;
 				case 'datastore':
 					responseData = await (datastore as unknown as ResourceModule)[sai360.operation].execute.call(this, i);
 					break;

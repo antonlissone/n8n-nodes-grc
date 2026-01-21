@@ -8,6 +8,11 @@ export declare class Sai360Grc implements INodeType {
                 value: string;
                 description: string;
             }[]>;
+            getTables(this: ILoadOptionsFunctions): Promise<{
+                name: string;
+                value: string;
+                description: string;
+            }[]>;
         };
     };
     execute(this: IExecuteFunctions): Promise<import("n8n-workflow").INodeExecutionData[][]>;

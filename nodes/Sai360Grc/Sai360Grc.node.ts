@@ -1,5 +1,6 @@
-import { NodeConnectionTypes, type INodeType, type INodeTypeDescription, type IExecuteFunctions, type ILoadOptionsFunctions } from 'n8n-workflow';
+import { NodeConnectionTypes, type INodeType, type INodeTypeDescription, type IExecuteFunctions, type ILoadOptionsFunctions, type IDataObject } from 'n8n-workflow';
 import { datastoreDescription } from './resources/datastore';
+import { tableRecordsDescription } from './resources/tableRecords';
 import { sessionDescription } from './resources/session';
 import { workflowDescription } from './resources/workflow';
 import { router } from './router';
@@ -14,6 +15,12 @@ interface DatastoreEntry {
 
 interface DatastoresResponse {
 	entries: DatastoreEntry[];
+}
+
+interface TableEntry {
+	name: string;
+	label: string;
+	description?: string;
 }
 
 export class Sai360Grc implements INodeType {
@@ -68,6 +75,10 @@ export class Sai360Grc implements INodeType {
 						value: 'datastore',
 					},
 					{
+						name: 'Table Record',
+						value: 'tableRecords',
+					},
+					{
 						name: 'Workflow',
 						value: 'workflow',
 					},
@@ -78,6 +89,7 @@ export class Sai360Grc implements INodeType {
 				],
 				default: 'datastore',
 			},
+			...tableRecordsDescription,
 			...workflowDescription,
 			...datastoreDescription,
 			...sessionDescription,
@@ -101,6 +113,35 @@ export class Sai360Grc implements INodeType {
 					name: `${ds.label} (${ds.identifier})`,
 					value: ds.identifier,
 					description: `Type: ${ds.type} | ID: ${ds.objectId}`,
+				}));
+			},
+			async getTables(this: ILoadOptionsFunctions) {
+				const response = await SAI360ApiRequest.call(
+					this,
+					'GET',
+					'/api/datamodel/classes',
+				) as IDataObject;
+
+				// Handle different response structures - could be array directly or wrapped
+				let tables: TableEntry[] = [];
+				if (Array.isArray(response)) {
+					tables = response as TableEntry[];
+				} else if (response?.classes) {
+					tables = response.classes as TableEntry[];
+				} else if (response?.items) {
+					tables = response.items as TableEntry[];
+				} else if (response?.entries) {
+					tables = response.entries as TableEntry[];
+				}
+
+				if (!tables.length) {
+					return [];
+				}
+
+				return tables.map((tbl: TableEntry) => ({
+					name: `${tbl.label || tbl.name} (${tbl.name})`,
+					value: tbl.name,
+					description: tbl.description || '',
 				}));
 			},
 		},
