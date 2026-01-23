@@ -46,7 +46,7 @@ export const tableRecordsQueryOrDeleteDescription: INodeProperties[] = [
 			},
 		],
 		default: 'xml',
-		description: 'Action to perform on the query results',
+
 	},
 	{
 		displayName: 'Query',
