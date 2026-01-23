@@ -31,7 +31,7 @@ export async function SAI360ApiRequest(
 	this: IExecuteFunctions | IExecuteSingleFunctions | ILoadOptionsFunctions | IPollFunctions,
 	method: IHttpRequestMethods,
 	endpoint: string,
-	body: IDataObject = {},
+	body: IDataObject | string = {},
 	qs: IDataObject = {},
 	optionsOverrides: IDataObject = { json: true },
 ) {
@@ -46,7 +46,7 @@ export async function SAI360ApiRequestWithDetails(
 	this: IExecuteFunctions | IExecuteSingleFunctions | ILoadOptionsFunctions | IPollFunctions,
 	method: IHttpRequestMethods,
 	endpoint: string,
-	body: IDataObject = {},
+	body: IDataObject | string = {},
 	qs: IDataObject = {},
 	optionsOverrides: IDataObject = { json: true },
 ): Promise<HttpRequestDetails> {
@@ -71,8 +71,9 @@ export async function SAI360ApiRequestWithDetails(
 	const finalURL = `${baseUrl}${endpoint}`;
 
 	// Build base request headers
+	// Only default to Accept: application/json if json mode is not explicitly disabled
 	const baseHeaders: IDataObject = {
-		'Accept': 'application/json',
+		...(optionsOverrides.json !== false ? { 'Accept': 'application/json' } : {}),
 		...(optionsOverrides.headers as IDataObject || {}),
 	};
 
@@ -88,8 +89,9 @@ export async function SAI360ApiRequestWithDetails(
 		headers: baseHeaders,
 	};
 
-	// Remove empty body
-	if (!body || Object.keys(body).length === 0) {
+	// Remove empty body (handle both object and string)
+	const isEmptyBody = !body || (typeof body === 'object' && Object.keys(body).length === 0) || (typeof body === 'string' && body.length === 0);
+	if (isEmptyBody) {
 		delete options.body;
 	}
 
@@ -154,8 +156,9 @@ export async function SAI360ApiRequestWithDetails(
 			headers: oauthHeaders,
 		};
 
-		// Remove empty body
-		if (!body || Object.keys(body).length === 0) {
+		// Remove empty body (handle both object and string)
+		const isOauthEmptyBody = !body || (typeof body === 'object' && Object.keys(body).length === 0) || (typeof body === 'string' && body.length === 0);
+		if (isOauthEmptyBody) {
 			delete oauthOptions.body;
 		}
 
@@ -280,4 +283,59 @@ export async function SAI360ApiLogin(
 	};
 
 	return await this.helpers.httpRequest!(options);
+}
+
+/**
+ * Fetches the SAI360 API log for debugging/error details.
+ * Returns parsed messages or the raw response.
+ */
+export async function SAI360GetLog(
+	this: IExecuteFunctions | IExecuteSingleFunctions | ILoadOptionsFunctions | IPollFunctions,
+): Promise<string> {
+	try {
+		const logResponse = await SAI360ApiRequestWithDetails.call(
+			this,
+			'GET',
+			'/api/log',
+			{},
+			{},
+			{},
+		);
+		return parseSai360Messages(logResponse.response.body);
+	} catch {
+		return 'Unable to retrieve error log';
+	}
+}
+
+/**
+ * Helper to parse SAI360 JSON API response messages.
+ * Private - used internally by SAI360GetLog.
+ */
+function parseSai360Messages(body: unknown): string {
+	if (!body) return '';
+
+	// If it's an object (JSON response), try to extract message arrays
+	if (typeof body === 'object') {
+		const saiResponse = body as IDataObject;
+		const messages: string[] = [];
+
+		// Extract messages from SAI360 JSON response structure
+		const messageTypes = ['FATAL', 'ERROR', 'WARNING', 'INFO', 'DEBUG', 'TRACE'];
+		for (const type of messageTypes) {
+			const typeMessages = saiResponse[type] as string[] | undefined;
+			if (typeMessages && Array.isArray(typeMessages) && typeMessages.length > 0) {
+				messages.push(`${type}: ${typeMessages.join('; ')}`);
+			}
+		}
+
+		if (messages.length > 0) {
+			return messages.join('\n');
+		}
+
+		// Fallback to JSON stringify
+		return JSON.stringify(body);
+	}
+
+	// If it's a string (possibly XML), return as-is
+	return String(body);
 }

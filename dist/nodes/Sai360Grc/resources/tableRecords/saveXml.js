@@ -45,40 +45,20 @@ async function execute(index) {
     const tableName = this.getNodeParameter('tableName', index);
     const xmlData = this.getNodeParameter('xmlData', index);
     const endpoint = `/api/instances?class=${encodeURIComponent(tableName)}`;
-    const httpDetails = await transport_1.SAI360ApiRequestWithDetails.call(this, 'POST', endpoint, {}, {}, {
+    const httpDetails = await transport_1.SAI360ApiRequestWithDetails.call(this, 'POST', endpoint, xmlData, {}, {
         json: false,
-        body: xmlData,
         headers: {
+            'Accept': '*/*',
             'Content-Type': 'application/xml',
-            'Accept': '*/*'
         },
     });
     const isError = httpDetails.response.isError || false;
     const statusCode = httpDetails.response.statusCode || 0;
     const responseBody = httpDetails.response.body;
-    const parseSai360Messages = (body) => {
-        if (!body)
-            return '';
-        if (typeof body === 'object') {
-            const saiResponse = body;
-            const messages = [];
-            const messageTypes = ['FATAL', 'ERROR', 'WARNING', 'INFO', 'DEBUG', 'TRACE'];
-            for (const type of messageTypes) {
-                const typeMessages = saiResponse[type];
-                if (typeMessages && Array.isArray(typeMessages) && typeMessages.length > 0) {
-                    messages.push(`${type}: ${typeMessages.join('; ')}`);
-                }
-            }
-            if (messages.length > 0) {
-                return messages.join('\n');
-            }
-            return JSON.stringify(body);
-        }
-        return String(body);
-    };
     if (isError) {
-        const errorDetail = parseSai360Messages(responseBody);
-        throw new Error(`Request failed with status ${statusCode}:\n${errorDetail}`);
+        const errorLog = await transport_1.SAI360GetLog.call(this);
+        const errorDetail = typeof responseBody === 'string' ? responseBody : String(responseBody);
+        throw new Error(`Request failed with status ${statusCode}:\n${errorDetail}\n\nAPI Log:\n${errorLog}`);
     }
     const output = [
         [

@@ -13,6 +13,7 @@ export interface HttpRequestDetails {
         isError?: boolean;
     };
 }
-export declare function SAI360ApiRequest(this: IExecuteFunctions | IExecuteSingleFunctions | ILoadOptionsFunctions | IPollFunctions, method: IHttpRequestMethods, endpoint: string, body?: IDataObject, qs?: IDataObject, optionsOverrides?: IDataObject): Promise<unknown>;
-export declare function SAI360ApiRequestWithDetails(this: IExecuteFunctions | IExecuteSingleFunctions | ILoadOptionsFunctions | IPollFunctions, method: IHttpRequestMethods, endpoint: string, body?: IDataObject, qs?: IDataObject, optionsOverrides?: IDataObject): Promise<HttpRequestDetails>;
+export declare function SAI360ApiRequest(this: IExecuteFunctions | IExecuteSingleFunctions | ILoadOptionsFunctions | IPollFunctions, method: IHttpRequestMethods, endpoint: string, body?: IDataObject | string, qs?: IDataObject, optionsOverrides?: IDataObject): Promise<unknown>;
+export declare function SAI360ApiRequestWithDetails(this: IExecuteFunctions | IExecuteSingleFunctions | ILoadOptionsFunctions | IPollFunctions, method: IHttpRequestMethods, endpoint: string, body?: IDataObject | string, qs?: IDataObject, optionsOverrides?: IDataObject): Promise<HttpRequestDetails>;
 export declare function SAI360ApiLogin(this: IExecuteFunctions | IExecuteSingleFunctions | ILoadOptionsFunctions | IPollFunctions, baseUrl: string, username: string, password: string): Promise<any>;
+export declare function SAI360GetLog(this: IExecuteFunctions | IExecuteSingleFunctions | ILoadOptionsFunctions | IPollFunctions): Promise<string>;

@@ -3,6 +3,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.SAI360ApiRequest = SAI360ApiRequest;
 exports.SAI360ApiRequestWithDetails = SAI360ApiRequestWithDetails;
 exports.SAI360ApiLogin = SAI360ApiLogin;
+exports.SAI360GetLog = SAI360GetLog;
 async function SAI360ApiRequest(method, endpoint, body = {}, qs = {}, optionsOverrides = { json: true }) {
     const result = await SAI360ApiRequestWithDetails.call(this, method, endpoint, body, qs, optionsOverrides);
     return result.response.body;
@@ -27,7 +28,7 @@ async function SAI360ApiRequestWithDetails(method, endpoint, body = {}, qs = {},
     const baseUrl = credentials.baseUrl;
     const finalURL = `${baseUrl}${endpoint}`;
     const baseHeaders = {
-        'Accept': 'application/json',
+        ...(optionsOverrides.json !== false ? { 'Accept': 'application/json' } : {}),
         ...(optionsOverrides.headers || {}),
     };
     const options = {
@@ -41,7 +42,8 @@ async function SAI360ApiRequestWithDetails(method, endpoint, body = {}, qs = {},
         ...optionsOverrides,
         headers: baseHeaders,
     };
-    if (!body || Object.keys(body).length === 0) {
+    const isEmptyBody = !body || (typeof body === 'object' && Object.keys(body).length === 0) || (typeof body === 'string' && body.length === 0);
+    if (isEmptyBody) {
         delete options.body;
     }
     const safeExtractHeaders = (headers) => {
@@ -94,7 +96,8 @@ async function SAI360ApiRequestWithDetails(method, endpoint, body = {}, qs = {},
             ...optionsOverrides,
             headers: oauthHeaders,
         };
-        if (!body || Object.keys(body).length === 0) {
+        const isOauthEmptyBody = !body || (typeof body === 'object' && Object.keys(body).length === 0) || (typeof body === 'string' && body.length === 0);
+        if (isOauthEmptyBody) {
             delete oauthOptions.body;
         }
         const fullResponse = await this.helpers.httpRequestWithAuthentication.call(this, 'sai360GrcOAuth2Api', oauthOptions);
@@ -158,5 +161,34 @@ async function SAI360ApiLogin(baseUrl, username, password) {
         json: false,
     };
     return await this.helpers.httpRequest(options);
+}
+async function SAI360GetLog() {
+    try {
+        const logResponse = await SAI360ApiRequestWithDetails.call(this, 'GET', '/api/log', {}, {}, {});
+        return parseSai360Messages(logResponse.response.body);
+    }
+    catch {
+        return 'Unable to retrieve error log';
+    }
+}
+function parseSai360Messages(body) {
+    if (!body)
+        return '';
+    if (typeof body === 'object') {
+        const saiResponse = body;
+        const messages = [];
+        const messageTypes = ['FATAL', 'ERROR', 'WARNING', 'INFO', 'DEBUG', 'TRACE'];
+        for (const type of messageTypes) {
+            const typeMessages = saiResponse[type];
+            if (typeMessages && Array.isArray(typeMessages) && typeMessages.length > 0) {
+                messages.push(`${type}: ${typeMessages.join('; ')}`);
+            }
+        }
+        if (messages.length > 0) {
+            return messages.join('\n');
+        }
+        return JSON.stringify(body);
+    }
+    return String(body);
 }
 //# sourceMappingURL=index.js.map

@@ -33,11 +33,13 @@ var __importStar = (this && this.__importStar) || (function () {
     };
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.tableRecordsDescription = exports.saveXml = exports.saveJson = exports.queryXml = exports.queryJson = void 0;
+exports.tableRecordsDescription = exports.saveXml = exports.saveJson = exports.queryOrDelete = exports.queryXml = exports.queryJson = void 0;
 const queryJson = __importStar(require("./queryJson"));
 exports.queryJson = queryJson;
 const queryXml = __importStar(require("./queryXml"));
 exports.queryXml = queryXml;
+const queryOrDelete = __importStar(require("./queryOrDelete"));
+exports.queryOrDelete = queryOrDelete;
 const saveJson = __importStar(require("./saveJson"));
 exports.saveJson = saveJson;
 const saveXml = __importStar(require("./saveXml"));
@@ -62,19 +64,25 @@ exports.tableRecordsDescription = [
                 description: 'Retrieve table records in JSON format',
             },
             {
-                name: 'Get Records (XML)',
+                name: 'Get Records (XML/ZIP)',
                 value: 'queryXml',
                 action: 'Get table records as XML',
-                description: 'Retrieve table records in XML format',
+                description: 'Retrieve table records in XML or ZIP format',
             },
             {
-                name: 'Save Table Records From JSON',
+                name: 'Query or Delete Records',
+                value: 'queryOrDelete',
+                action: 'Query or delete records',
+                description: 'Query records via POST and then GET XML or DELETE them',
+            },
+            {
+                name: 'Save to Records From JSON',
                 value: 'saveJson',
                 action: 'Save table records from JSON',
                 description: 'Create or update table records using JSON format',
             },
             {
-                name: 'Save Table Records From XML',
+                name: 'Save to Records From XML',
                 value: 'saveXml',
                 action: 'Save table records from XML',
                 description: 'Create or update table records using XML format',
@@ -84,6 +92,7 @@ exports.tableRecordsDescription = [
     },
     ...queryJson.tableRecordsQueryJsonDescription,
     ...queryXml.tableRecordsQueryXmlDescription,
+    ...queryOrDelete.tableRecordsQueryOrDeleteDescription,
     ...saveJson.tableRecordsSaveJsonDescription,
     ...saveXml.tableRecordsSaveXmlDescription,
 ];
