@@ -33,7 +33,9 @@ var __importStar = (this && this.__importStar) || (function () {
     };
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.tableRecordsDescription = exports.saveXml = exports.saveJson = exports.queryOrDelete = exports.queryXml = exports.queryJson = void 0;
+exports.tableRecordsDescription = exports.saveXml = exports.saveJson = exports.queryOrDelete = exports.queryXml = exports.queryJson = exports.mapJson = void 0;
+const mapJson = __importStar(require("./mapJson"));
+exports.mapJson = mapJson;
 const queryJson = __importStar(require("./queryJson"));
 exports.queryJson = queryJson;
 const queryXml = __importStar(require("./queryXml"));
@@ -70,6 +72,12 @@ exports.tableRecordsDescription = [
                 description: 'Retrieve table records in XML or ZIP format',
             },
             {
+                name: 'Map Fields for JSON',
+                value: 'mapJson',
+                action: 'Map fields for JSON',
+                description: 'Map input fields to SAI360 table attributes for JSON output',
+            },
+            {
                 name: 'Query or Delete Records',
                 value: 'queryOrDelete',
                 action: 'Query or delete records',
@@ -90,6 +98,7 @@ exports.tableRecordsDescription = [
         ],
         default: 'queryJson',
     },
+    ...mapJson.tableRecordsMapJsonDescription,
     ...queryJson.tableRecordsQueryJsonDescription,
     ...queryXml.tableRecordsQueryXmlDescription,
     ...queryOrDelete.tableRecordsQueryOrDeleteDescription,

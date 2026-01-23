@@ -1,4 +1,4 @@
-import { type INodeType, type INodeTypeDescription, type IExecuteFunctions, type ILoadOptionsFunctions } from 'n8n-workflow';
+import { type INodeType, type INodeTypeDescription, type IExecuteFunctions, type ILoadOptionsFunctions, type ResourceMapperFields } from 'n8n-workflow';
 export declare class Sai360Grc implements INodeType {
     description: INodeTypeDescription;
     methods: {
@@ -13,6 +13,14 @@ export declare class Sai360Grc implements INodeType {
                 value: string;
                 description: string;
             }[]>;
+            getTableFieldsForLookup(this: ILoadOptionsFunctions): Promise<{
+                name: string;
+                value: string;
+                description: string;
+            }[]>;
+        };
+        resourceMapping: {
+            getTableAttributes(this: ILoadOptionsFunctions): Promise<ResourceMapperFields>;
         };
     };
     execute(this: IExecuteFunctions): Promise<import("n8n-workflow").INodeExecutionData[][]>;

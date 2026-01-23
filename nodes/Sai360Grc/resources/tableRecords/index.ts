@@ -1,4 +1,5 @@
 import type { INodeProperties } from 'n8n-workflow';
+import * as mapJson from './mapJson';
 import * as queryJson from './queryJson';
 import * as queryXml from './queryXml';
 import * as queryOrDelete from './queryOrDelete';
@@ -9,7 +10,7 @@ const showOnlyForTableRecords = {
 	resource: ['tableRecords'],
 };
 
-export { queryJson, queryXml, queryOrDelete, saveJson, saveXml };
+export { mapJson, queryJson, queryXml, queryOrDelete, saveJson, saveXml };
 
 export const tableRecordsDescription: INodeProperties[] = [
 	{
@@ -34,6 +35,12 @@ export const tableRecordsDescription: INodeProperties[] = [
 				description: 'Retrieve table records in XML or ZIP format',
 			},
 			{
+				name: 'Map Fields for JSON',
+				value: 'mapJson',
+				action: 'Map fields for JSON',
+				description: 'Map input fields to SAI360 table attributes for JSON output',
+			},
+			{
 				name: 'Query or Delete Records',
 				value: 'queryOrDelete',
 				action: 'Query or delete records',
@@ -54,6 +61,7 @@ export const tableRecordsDescription: INodeProperties[] = [
 		],
 		default: 'queryJson',
 	},
+	...mapJson.tableRecordsMapJsonDescription,
 	...queryJson.tableRecordsQueryJsonDescription,
 	...queryXml.tableRecordsQueryXmlDescription,
 	...queryOrDelete.tableRecordsQueryOrDeleteDescription,

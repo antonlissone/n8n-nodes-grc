@@ -1,4 +1,13 @@
-import { NodeConnectionTypes, type INodeType, type INodeTypeDescription, type IExecuteFunctions, type ILoadOptionsFunctions, type IDataObject } from 'n8n-workflow';
+import {
+	NodeConnectionTypes,
+	type INodeType,
+	type INodeTypeDescription,
+	type IExecuteFunctions,
+	type ILoadOptionsFunctions,
+	type IDataObject,
+	type ResourceMapperFields,
+	type ResourceMapperField,
+} from 'n8n-workflow';
 import { datastoreDescription } from './resources/datastore';
 import { tableRecordsDescription } from './resources/tableRecords';
 import { sessionDescription } from './resources/session';
@@ -21,6 +30,16 @@ interface TableEntry {
 	name: string;
 	label: string;
 	description?: string;
+}
+
+interface ClassAttribute {
+	name: string;
+	label?: string;
+	type?: string;
+	required?: boolean;
+	description?: string;
+	readOnly?: boolean;
+	maxLength?: number;
 }
 
 export class Sai360Grc implements INodeType {
@@ -143,6 +162,129 @@ export class Sai360Grc implements INodeType {
 					value: tbl.name,
 					description: tbl.description || '',
 				}));
+			},
+			async getTableFieldsForLookup(this: ILoadOptionsFunctions) {
+				const tableName = this.getNodeParameter('tableName', 0) as string;
+
+				// Always include uuid as the first option
+				const options = [
+					{
+						name: 'Uuid',
+						value: 'uuid',
+						description: 'Use the unique identifier (uuid) for lookup',
+					},
+				];
+
+				if (!tableName) {
+					return options;
+				}
+
+				try {
+					const response = (await SAI360ApiRequest.call(
+						this,
+						'GET',
+						`/api/datamodel/class/${encodeURIComponent(tableName)}`,
+					)) as IDataObject;
+
+					// Extract attributes from response
+					let attributes: ClassAttribute[] = [];
+					if (Array.isArray(response)) {
+						attributes = response as ClassAttribute[];
+					} else if (response?.attributes) {
+						attributes = response.attributes as ClassAttribute[];
+					} else if (response?.fields) {
+						attributes = response.fields as ClassAttribute[];
+					} else if (response?.properties) {
+						attributes = response.properties as ClassAttribute[];
+					}
+
+					// Add each attribute as an option (excluding uuid since it's already added)
+					for (const attr of attributes) {
+						if (attr.name !== 'uuid') {
+							options.push({
+								name: attr.label || attr.name,
+								value: attr.name,
+								description: attr.description || `Field: ${attr.name}`,
+							});
+						}
+					}
+				} catch {
+					// If API call fails, just return uuid option
+				}
+
+				return options;
+			},
+		},
+		resourceMapping: {
+			async getTableAttributes(
+				this: ILoadOptionsFunctions,
+			): Promise<ResourceMapperFields> {
+				const tableName = this.getNodeParameter('tableName', 0) as string;
+
+				if (!tableName) {
+					return { fields: [] };
+				}
+
+				const response = (await SAI360ApiRequest.call(
+					this,
+					'GET',
+					`/api/datamodel/class/${encodeURIComponent(tableName)}`,
+				)) as IDataObject;
+
+				// Extract attributes from response - adjust based on actual API structure
+				let attributes: ClassAttribute[] = [];
+				if (Array.isArray(response)) {
+					attributes = response as ClassAttribute[];
+				} else if (response?.attributes) {
+					attributes = response.attributes as ClassAttribute[];
+				} else if (response?.fields) {
+					attributes = response.fields as ClassAttribute[];
+				} else if (response?.properties) {
+					attributes = response.properties as ClassAttribute[];
+				}
+
+				// Map SAI360 types to n8n resource mapper types
+				const mapType = (saiType?: string): ResourceMapperField['type'] => {
+					if (!saiType) return 'string';
+					const lower = saiType.toLowerCase();
+					if (lower.includes('int') || lower.includes('number') || lower.includes('decimal') || lower.includes('float') || lower.includes('double')) {
+						return 'number';
+					}
+					if (lower.includes('bool')) {
+						return 'boolean';
+					}
+					if (lower.includes('date') || lower.includes('time')) {
+						return 'dateTime';
+					}
+					return 'string';
+				};
+
+				const fields: ResourceMapperField[] = [
+					// Static __uuid field for direct UUID specification
+					{
+						id: '__uuid',
+						displayName: '__uuid (Direct UUID)',
+						required: false,
+						defaultMatch: false,
+						canBeUsedToMatch: true,
+						display: true,
+						type: 'string',
+						readOnly: false,
+					},
+					// Dynamic fields from API
+					...attributes.map((attr) => ({
+						id: attr.name,
+						displayName: attr.label || attr.name,
+						required: attr.required || false,
+						defaultMatch: attr.name === 'guid' || attr.name === 'id',
+						canBeUsedToMatch: true,
+						display: true,
+						type: mapType(attr.type),
+						readOnly: attr.readOnly || false,
+					})),
+				];
+
+				return { fields };
 			},
 		},
 	};
