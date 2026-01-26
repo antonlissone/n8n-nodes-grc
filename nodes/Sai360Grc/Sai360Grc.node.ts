@@ -12,6 +12,7 @@ import { datastoreDescription } from './resources/datastore';
 import { tableRecordsDescription } from './resources/tableRecords';
 import { sessionDescription } from './resources/session';
 import { workflowDescription } from './resources/workflow';
+import { graphqlDescription } from './resources/graphql';
 import { router } from './router';
 import { SAI360ApiRequest } from '../../transport';
 
@@ -88,10 +89,18 @@ export class Sai360Grc implements INodeType {
 				name: 'resource',
 				type: 'options',
 				noDataExpression: true,
-				options: [
+options: [
 					{
 						name: 'Datastore',
 						value: 'datastore',
+					},
+					{
+						name: 'GraphQL',
+						value: 'graphql',
+					},
+					{
+						name: 'Session',
+						value: 'session',
 					},
 					{
 						name: 'Table Record',
@@ -101,17 +110,14 @@ export class Sai360Grc implements INodeType {
 						name: 'Workflow',
 						value: 'workflow',
 					},
-					{
-						name: 'Session',
-						value: 'session',
-					},
 				],
 				default: 'datastore',
 			},
-			...tableRecordsDescription,
+		...tableRecordsDescription,
 			...workflowDescription,
 			...datastoreDescription,
 			...sessionDescription,
+			...graphqlDescription,
 		],
 	};
 

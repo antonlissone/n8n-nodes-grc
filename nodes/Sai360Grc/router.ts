@@ -5,6 +5,7 @@ import * as tableRecords from './resources/tableRecords';
 import * as datastore from './resources/datastore';
 import * as workflow from './resources/workflow';
 import * as session from './resources/session';
+import * as graphql from './resources/graphql';
 
 import type { SAI360 } from './node.type';
 
@@ -34,8 +35,11 @@ export async function router(this: IExecuteFunctions) {
 				case 'session':
 					responseData = await (session as unknown as ResourceModule)[sai360.operation].execute.call(this, i);
 					break;
-				case 'workflow':
+case 'workflow':
 					responseData = await (workflow as unknown as ResourceModule)[sai360.operation].execute.call(this, i);
+					break;
+				case 'graphql':
+					responseData = await (graphql as unknown as ResourceModule)[sai360.operation].execute.call(this, i);
 					break;
 				default:
 					throw new NodeOperationError(this.getNode(), `The resource "${resource}" is not known`);

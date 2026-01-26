@@ -5,6 +5,7 @@ type NodeMap = {
 	datastore: 'primeForPagination' | 'directExecute';
 	workflow: 'move';
 	session: 'getLog' | 'logout';
+	graphql: 'executeQuery';
 };
 
 export type SAI360 = AllEntities<NodeMap>;
