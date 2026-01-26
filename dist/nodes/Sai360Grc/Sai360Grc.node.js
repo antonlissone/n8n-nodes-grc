@@ -6,6 +6,7 @@ const datastore_1 = require("./resources/datastore");
 const tableRecords_1 = require("./resources/tableRecords");
 const session_1 = require("./resources/session");
 const workflow_1 = require("./resources/workflow");
+const graphql_1 = require("./resources/graphql");
 const router_1 = require("./router");
 const transport_1 = require("../../transport");
 class Sai360Grc {
@@ -61,16 +62,20 @@ class Sai360Grc {
                             value: 'datastore',
                         },
                         {
+                            name: 'GraphQL',
+                            value: 'graphql',
+                        },
+                        {
+                            name: 'Session',
+                            value: 'session',
+                        },
+                        {
                             name: 'Table Record',
                             value: 'tableRecords',
                         },
                         {
                             name: 'Workflow',
                             value: 'workflow',
-                        },
-                        {
-                            name: 'Session',
-                            value: 'session',
                         },
                     ],
                     default: 'datastore',
@@ -79,6 +84,7 @@ class Sai360Grc {
                 ...workflow_1.workflowDescription,
                 ...datastore_1.datastoreDescription,
                 ...session_1.sessionDescription,
+                ...graphql_1.graphqlDescription,
             ],
         };
         this.methods = {

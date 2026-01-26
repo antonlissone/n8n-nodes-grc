@@ -39,6 +39,7 @@ const tableRecords = __importStar(require("./resources/tableRecords"));
 const datastore = __importStar(require("./resources/datastore"));
 const workflow = __importStar(require("./resources/workflow"));
 const session = __importStar(require("./resources/session"));
+const graphql = __importStar(require("./resources/graphql"));
 async function router() {
     var _a;
     const items = this.getInputData();
@@ -61,6 +62,9 @@ async function router() {
                     break;
                 case 'workflow':
                     responseData = await workflow[sai360.operation].execute.call(this, i);
+                    break;
+                case 'graphql':
+                    responseData = await graphql[sai360.operation].execute.call(this, i);
                     break;
                 default:
                     throw new n8n_workflow_1.NodeOperationError(this.getNode(), `The resource "${resource}" is not known`);
