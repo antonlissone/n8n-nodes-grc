@@ -45,12 +45,10 @@ export const graphqlExecuteQueryDescription: INodeProperties[] = [
 		typeOptions: {
 			rows: 10,
 		},
-		placeholder: `query GetRecord($id: ID!) {
-  record(id: $id) {
+		placeholder: `query sdControlMeasureGet($id: ID!) {
     id
     name
     createdAt
-  }
 }`,
 	},
 	{
@@ -91,7 +89,7 @@ export const graphqlExecuteQueryDescription: INodeProperties[] = [
 			alwaysOpenEditWindow: false,
 			rows: 5,
 		},
-		placeholder: '{ "ID": "123", "filter": "active" }',
+		placeholder: '{ "ID": "123" }',
 	},
 	{
 		displayName: 'Query Variables',
@@ -133,51 +131,13 @@ export const graphqlExecuteQueryDescription: INodeProperties[] = [
 			},
 		],
 	},
-	{
-		displayName: 'Operation Name',
-		name: 'operationName',
-		type: 'string',
-		displayOptions: {
-			show: showOnlyForGraphqlExecuteQuery,
-		},
-		default: '',
-		description: 'Name of the GraphQL operation to execute (optional, required if query contains multiple operations)',
-		placeholder: 'GetRecord',
-	},
-	{
-		displayName: 'Options',
-		name: 'options',
-		type: 'collection',
-		displayOptions: {
-			show: showOnlyForGraphqlExecuteQuery,
-		},
-		placeholder: 'Add Option',
-		default: {},
-		options: [
-			{
-				displayName: 'Include Extensions',
-				name: 'includeExtensions',
-				type: 'boolean',
-				default: false,
-				description: 'Whether to include the extensions field from the GraphQL response',
-			},
-			{
-				displayName: 'Return Full Response',
-				name: 'returnFullResponse',
-				type: 'boolean',
-				default: false,
-				description: 'Whether to return the full GraphQL response including data, errors, and extensions',
-			},
-		],
-	},
+
 ];
 
 export async function execute(this: IExecuteFunctions, index: number) {
 	// Get parameters
 	const query = this.getNodeParameter('query', index) as string;
 	const variablesMode = this.getNodeParameter('variablesMode', index) as string;
-	const operationName = this.getNodeParameter('operationName', index, '') as string;
-	const options = this.getNodeParameter('options', index, {}) as IDataObject;
 
 	if (!query || query.trim() === '') {
 		throw new NodeOperationError(this.getNode(), 'GraphQL query cannot be empty', { itemIndex: index });
@@ -233,11 +193,6 @@ export async function execute(this: IExecuteFunctions, index: number) {
 		requestBody.variables = variables;
 	}
 
-	// Only add operationName if provided
-	if (operationName && operationName.trim() !== '') {
-		requestBody.operationName = operationName.trim();
-	}
-
 	// Make the GraphQL request
 	const response = await SAI360ApiRequestWithDetails.call(
 		this,
@@ -272,32 +227,15 @@ export async function execute(this: IExecuteFunctions, index: number) {
 	if (graphqlResponse.errors && Array.isArray(graphqlResponse.errors)) {
 		const errors = graphqlResponse.errors as IDataObject[];
 		const errorMessages = errors.map((e) => e.message || JSON.stringify(e)).join('; ');
-
-		// If returnFullResponse is enabled, don't throw but include errors in response
-		if (!options.returnFullResponse) {
-			throw new NodeOperationError(
-				this.getNode(),
-				`GraphQL query returned errors: ${errorMessages}`,
-				{ itemIndex: index },
-			);
-		}
+		throw new NodeOperationError(
+			this.getNode(),
+			`GraphQL query returned errors: ${errorMessages}`,
+			{ itemIndex: index },
+		);
 	}
 
-	// Determine what to return
-	let result: IDataObject;
-
-	if (options.returnFullResponse) {
-		// Return the full GraphQL response
-		result = graphqlResponse;
-	} else {
-		// Return just the data portion
-		result = (graphqlResponse.data as IDataObject) || {};
-
-		// Optionally include extensions
-		if (options.includeExtensions && graphqlResponse.extensions) {
-			result._extensions = graphqlResponse.extensions;
-		}
-	}
+	// Return just the data portion
+	const result = (graphqlResponse.data as IDataObject) || {};
 
 	const executionData = this.helpers.constructExecutionMetaData(
 		this.helpers.returnJsonArray(result),
