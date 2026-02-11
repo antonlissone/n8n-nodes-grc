@@ -7,9 +7,16 @@ export const sessionGetLogDescription: INodeProperties[] = [];
 export async function execute(this: IExecuteFunctions, index: number) {
 	const endpoint = '/api/log';
 
-	const httpDetails = await SAI360ApiRequestWithDetails.call(this, 'GET', endpoint, {}, {}, {
-		headers: { Accept: 'text/plain' },
-	});
+	const httpDetails = await SAI360ApiRequestWithDetails.call(
+		this,
+		'GET',
+		endpoint,
+		{},
+		{},
+		{
+			headers: { Accept: 'text/plain' },
+		},
+	);
 
 	// --- Check for HTTP errors ---
 	const isError = httpDetails.response.isError || false;
@@ -18,18 +25,18 @@ export async function execute(this: IExecuteFunctions, index: number) {
 
 	// --- Handle errors ---
 	if (isError) {
-		const errorMessage = typeof responseBody === 'object' && responseBody !== null
-			? JSON.stringify(responseBody)
-			: String(responseBody);
+		const errorMessage =
+			typeof responseBody === 'object' && responseBody !== null
+				? JSON.stringify(responseBody)
+				: String(responseBody);
 		throw new Error(`Request failed with status ${statusCode}: ${errorMessage}`);
 	}
 
-	const output: INodeExecutionData[][] = [
-		[
-			{
-				json: { log: responseBody as string },
-			},
-		],
+	const output: INodeExecutionData[] = [
+		{
+			json: { log: responseBody as string },
+			pairedItem: { item: index },
+		},
 	];
 
 	return output;
