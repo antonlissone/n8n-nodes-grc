@@ -1,68 +1,66 @@
 {
-  "name": "@sai360/n8n-nodes-grc",
-  "version": "1.0.2",
-  "description": "n8n community nodes for SAI360 GRC API integration",
-  "license": "MIT",
-  "homepage": "https://github.com/sai360/n8n-nodes-grc",
-  "keywords": [
-    "n8n-community-node-package"
-  ],
-  "author": {
-    "name": "SAI360",
-    "email": "support@sai360.com"
-  },
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/sai360/n8n-nodes-grc.git"
-  },
-  "scripts": {
-    "build": "n8n-node build",
-    "build:watch": "tsc --watch --preserveWatchOutput",
-    "dev": "n8n-node dev",
-    "dev:fast": "npm run build && concurrently -k -n \"build,n8n\" -c \"yellow,cyan\" \"npm run build:watch\" \"cross-env N8N_CUSTOM_EXTENSIONS=. nodemon --watch dist --delay 2 --exec n8n start\"",
-    "start": "npm run build && n8n start",
-    "start:tunnel": "npm run build && n8n start --tunnel",
-    "lint": "n8n-node lint",
-    "lint:fix": "n8n-node lint --fix",
-    "release": "n8n-node release",
-    "prepublishOnly": "n8n-node prerelease"
-  },
-  "files": [
-    "dist"
-  ],
-  "n8n": {
-    "n8nNodesApiVersion": 1,
-    "strict": true,
-    "credentials": [
-      "dist/credentials/Sai360GrcOAuth2Api.credentials.js",
-      "dist/credentials/Sai360GrcBasicApi.credentials.js"
-    ],
-    "nodes": [
-      "dist/nodes/Sai360Grc/Sai360Grc.node.js"
-    ]
-  },
-  "devDependencies": {
-    "@n8n/node-cli": "*",
-    "@types/node": "^14.14.37",
-    "concurrently": "^9.2.1",
-    "cross-env": "^10.1.0",
-    "eslint": "9.32.0",
-    "n8n-core": "^1.0.0",
-    "n8n-workflow": "^1.0.0",
-    "nodemon": "^3.1.11",
-    "prettier": "3.6.2",
-    "release-it": "^19.2.3",
-    "typescript": "5.9.2"
-  },
-  "dependencies": {
-    "n8n-core": "^1.0.0",
-    "n8n-workflow": "^1.0.0"
-  },
-  "overrides": {
-    "eslint": "9.32.0",
-    "rimraf": "^6.0.0",
-    "glob": "^11.0.0",
-    "@humanwhocodes/config-array": "npm:@eslint/config-array@^0.20.0",
-    "@humanwhocodes/object-schema": "npm:@eslint/object-schema@^2.2.0"
-  }
+	"name": "@sai360/n8n-nodes-grc",
+	"version": "1.0.2",
+	"description": "n8n community nodes for SAI360 GRC API integration",
+	"license": "MIT",
+	"homepage": "https://github.com/antonlissone/n8n-nodes-grc",
+	"keywords": [
+		"n8n-community-node-package"
+	],
+	"author": {
+		"name": "SAI360",
+		"email": "support@sai360.com"
+	},
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/antonlissone/n8n-nodes-grc.git"
+	},
+	"scripts": {
+		"build": "n8n-node build",
+		"build:watch": "tsc --watch --preserveWatchOutput",
+		"dev": "n8n-node dev",
+		"dev:fast": "npm run build && concurrently -k -n \"build,n8n\" -c \"yellow,cyan\" \"npm run build:watch\" \"cross-env N8N_CUSTOM_EXTENSIONS=. nodemon --watch dist --delay 2 --exec n8n start\"",
+		"start": "npm run build && n8n start",
+		"start:tunnel": "npm run build && n8n start --tunnel",
+		"lint": "n8n-node lint",
+		"lint:fix": "n8n-node lint --fix",
+		"release": "n8n-node release",
+		"prepublishOnly": "n8n-node prerelease"
+	},
+	"files": [
+		"dist"
+	],
+	"n8n": {
+		"n8nNodesApiVersion": 1,
+		"strict": true,
+		"credentials": [
+			"dist/credentials/Sai360GrcOAuth2Api.credentials.js",
+			"dist/credentials/Sai360GrcBasicApi.credentials.js"
+		],
+		"nodes": [
+			"dist/nodes/Sai360Grc/Sai360Grc.node.js"
+		]
+	},
+	"devDependencies": {
+		"@n8n/node-cli": "^0.18.0",
+		"@types/node": "^18.0.0",
+		"concurrently": "^9.2.1",
+		"cross-env": "^10.1.0",
+		"eslint": "9.32.0",
+		"nodemon": "^3.1.11",
+		"prettier": "3.6.2",
+		"release-it": "^19.2.3",
+		"typescript": "5.9.2"
+	},
+	"peerDependencies": {
+		"n8n-core": "^1.0.0",
+		"n8n-workflow": "^1.0.0"
+	},
+	"overrides": {
+		"eslint": "9.32.0",
+		"rimraf": "^6.0.0",
+		"glob": "^11.0.0",
+		"@humanwhocodes/config-array": "npm:@eslint/config-array@^0.20.0",
+		"@humanwhocodes/object-schema": "npm:@eslint/object-schema@^2.2.0"
+	}
 }
