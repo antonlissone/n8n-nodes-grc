@@ -41,6 +41,7 @@
 			"dist/nodes/Sai360Grc/Sai360Grc.node.js"
 		]
 	},
+	"dependencies": {},
 	"devDependencies": {
 		"@n8n/node-cli": "^0.18.0",
 		"@types/node": "^18.0.0",
@@ -53,8 +54,7 @@
 		"typescript": "5.9.2"
 	},
 	"peerDependencies": {
-		"n8n-core": "^1.0.0",
-		"n8n-workflow": "^1.0.0"
+		"n8n-workflow": "*"
 	},
 	"overrides": {
 		"eslint": "9.32.0",
