@@ -1,6 +1,6 @@
 {
     "name": "@sai360/n8n-nodes-grc",
-    "version": "0.1.0",
+    "version": "1.0.0",
     "description": "n8n community nodes for SAI360 GRC API integration",
     "license": "MIT",
     "homepage": "https://github.com/sai360/n8n-nodes-grc",
