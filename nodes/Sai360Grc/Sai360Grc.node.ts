@@ -11,7 +11,6 @@ import {
 import { datastoreDescription } from './resources/datastore';
 import { tableRecordsDescription } from './resources/tableRecords';
 import { sessionDescription } from './resources/session';
-import { workflowDescription } from './resources/workflow';
 import { graphqlDescription } from './resources/graphql';
 import { router } from './router';
 import { SAI360ApiRequest } from '../../transport';
@@ -58,19 +57,26 @@ export class Sai360Grc implements INodeType {
 		usableAsTool: true,
 		inputs: [NodeConnectionTypes.Main],
 		outputs: [NodeConnectionTypes.Main],
-		credentials: [{
-			name: 'sai360GrcOAuth2Api', required: false, displayOptions: {
-				show: {
-					authentication: ['basic'], // Only shows if you somehow had an authType selector
+		credentials: [
+			{
+				name: 'sai360GrcOAuth2Api',
+				required: false,
+				displayOptions: {
+					show: {
+						authentication: ['oauth2'],
+					},
 				},
-			}
-		}, {
-			name: 'sai360GrcBasicApi', required: false, displayOptions: {
-				show: {
-					authentication: ['oauth2'], // Only shows if you somehow had an authType selector
+			},
+			{
+				name: 'sai360GrcBasicApi',
+				required: false,
+				displayOptions: {
+					show: {
+						authentication: ['basic'],
+					},
 				},
-			}
-		}],
+			},
+		],
 		properties: [
 			{
 				displayName: 'Authentication',
@@ -89,7 +95,7 @@ export class Sai360Grc implements INodeType {
 				name: 'resource',
 				type: 'options',
 				noDataExpression: true,
-options: [
+				options: [
 					{
 						name: 'Datastore',
 						value: 'datastore',
@@ -106,15 +112,10 @@ options: [
 						name: 'Table Record',
 						value: 'tableRecords',
 					},
-					{
-						name: 'Workflow',
-						value: 'workflow',
-					},
 				],
 				default: 'datastore',
 			},
-		...tableRecordsDescription,
-			...workflowDescription,
+			...tableRecordsDescription,
 			...datastoreDescription,
 			...sessionDescription,
 			...graphqlDescription,
@@ -124,11 +125,11 @@ options: [
 	methods = {
 		loadOptions: {
 			async getDatastores(this: ILoadOptionsFunctions) {
-				const response = await SAI360ApiRequest.call(
+				const response = (await SAI360ApiRequest.call(
 					this,
 					'GET',
 					'/api/datastoreservice/datastores',
-				) as DatastoresResponse;
+				)) as DatastoresResponse;
 
 				if (!response?.entries) {
 					return [];
@@ -141,11 +142,11 @@ options: [
 				}));
 			},
 			async getTables(this: ILoadOptionsFunctions) {
-				const response = await SAI360ApiRequest.call(
+				const response = (await SAI360ApiRequest.call(
 					this,
 					'GET',
 					'/api/datamodel/classes',
-				) as IDataObject;
+				)) as IDataObject;
 
 				// Handle different response structures - could be array directly or wrapped
 				let tables: TableEntry[] = [];
@@ -222,9 +223,7 @@ options: [
 			},
 		},
 		resourceMapping: {
-			async getTableAttributes(
-				this: ILoadOptionsFunctions,
-			): Promise<ResourceMapperFields> {
+			async getTableAttributes(this: ILoadOptionsFunctions): Promise<ResourceMapperFields> {
 				const tableName = this.getNodeParameter('tableName', 0) as string;
 
 				if (!tableName) {
@@ -253,7 +252,13 @@ options: [
 				const mapType = (saiType?: string): ResourceMapperField['type'] => {
 					if (!saiType) return 'string';
 					const lower = saiType.toLowerCase();
-					if (lower.includes('int') || lower.includes('number') || lower.includes('decimal') || lower.includes('float') || lower.includes('double')) {
+					if (
+						lower.includes('int') ||
+						lower.includes('number') ||
+						lower.includes('decimal') ||
+						lower.includes('float') ||
+						lower.includes('double')
+					) {
 						return 'number';
 					}
 					if (lower.includes('bool')) {

@@ -3,14 +3,17 @@ import { NodeApiError, NodeOperationError } from 'n8n-workflow';
 
 import * as tableRecords from './resources/tableRecords';
 import * as datastore from './resources/datastore';
-import * as workflow from './resources/workflow';
+
 import * as session from './resources/session';
 import * as graphql from './resources/graphql';
 
 import type { SAI360 } from './node.type';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-type ResourceModule = Record<string, { execute: (this: IExecuteFunctions, index: number) => Promise<any> }>;
+type ResourceModule = Record<
+	string,
+	{ execute: (this: IExecuteFunctions, index: number) => Promise<any> }
+>;
 
 export async function router(this: IExecuteFunctions) {
 	const items = this.getInputData();
@@ -27,19 +30,24 @@ export async function router(this: IExecuteFunctions) {
 
 			switch (sai360.resource) {
 				case 'tableRecords':
-					responseData = await (tableRecords as unknown as ResourceModule)[sai360.operation].execute.call(this, i);
+					responseData = await (tableRecords as unknown as ResourceModule)[
+						sai360.operation
+					].execute.call(this, i);
 					break;
 				case 'datastore':
-					responseData = await (datastore as unknown as ResourceModule)[sai360.operation].execute.call(this, i);
+					responseData = await (datastore as unknown as ResourceModule)[
+						sai360.operation
+					].execute.call(this, i);
 					break;
 				case 'session':
-					responseData = await (session as unknown as ResourceModule)[sai360.operation].execute.call(this, i);
-					break;
-case 'workflow':
-					responseData = await (workflow as unknown as ResourceModule)[sai360.operation].execute.call(this, i);
+					responseData = await (session as unknown as ResourceModule)[
+						sai360.operation
+					].execute.call(this, i);
 					break;
 				case 'graphql':
-					responseData = await (graphql as unknown as ResourceModule)[sai360.operation].execute.call(this, i);
+					responseData = await (graphql as unknown as ResourceModule)[
+						sai360.operation
+					].execute.call(this, i);
 					break;
 				default:
 					throw new NodeOperationError(this.getNode(), `The resource "${resource}" is not known`);
@@ -47,7 +55,6 @@ case 'workflow':
 
 			// flatten the inner array
 			returnData.push(...responseData.flat());
-
 		} catch (error) {
 			if (this.continueOnFail()) {
 				const message = error instanceof Error ? error.message : String(error);

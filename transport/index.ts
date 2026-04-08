@@ -35,7 +35,14 @@ export async function SAI360ApiRequest(
 	qs: IDataObject = {},
 	optionsOverrides: IDataObject = { json: true },
 ) {
-	const result = await SAI360ApiRequestWithDetails.call(this, method, endpoint, body, qs, optionsOverrides);
+	const result = await SAI360ApiRequestWithDetails.call(
+		this,
+		method,
+		endpoint,
+		body,
+		qs,
+		optionsOverrides,
+	);
 	return result.response.body;
 }
 
@@ -64,7 +71,9 @@ export async function SAI360ApiRequestWithDetails(
 		credentials = oauthCreds;
 		authentication = 'oauth2';
 	} else {
-		throw new Error('No SAI360 credentials found. Please set either Basic Auth or OAuth2 credentials.');
+		throw new Error(
+			'No SAI360 credentials found. Please set either Basic Auth or OAuth2 credentials.',
+		);
 	}
 
 	const baseUrl = credentials.baseUrl as string;
@@ -73,8 +82,8 @@ export async function SAI360ApiRequestWithDetails(
 	// Build base request headers
 	// Only default to Accept: application/json if json mode is not explicitly disabled
 	const baseHeaders: IDataObject = {
-		...(optionsOverrides.json !== false ? { 'Accept': 'application/json' } : {}),
-		...(optionsOverrides.headers as IDataObject || {}),
+		...(optionsOverrides.json !== false ? { Accept: 'application/json' } : {}),
+		...((optionsOverrides.headers as IDataObject) || {}),
 	};
 
 	const options: IHttpRequestOptions = {
@@ -90,7 +99,10 @@ export async function SAI360ApiRequestWithDetails(
 	};
 
 	// Remove empty body (handle both object and string)
-	const isEmptyBody = !body || (typeof body === 'object' && Object.keys(body).length === 0) || (typeof body === 'string' && body.length === 0);
+	const isEmptyBody =
+		!body ||
+		(typeof body === 'object' && Object.keys(body).length === 0) ||
+		(typeof body === 'string' && body.length === 0);
 	if (isEmptyBody) {
 		delete options.body;
 	}
@@ -105,7 +117,9 @@ export async function SAI360ApiRequestWithDetails(
 				if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') {
 					safeHeaders[key] = value;
 				} else if (Array.isArray(value)) {
-					safeHeaders[key] = value.filter(v => typeof v === 'string' || typeof v === 'number').join(', ');
+					safeHeaders[key] = value
+						.filter((v) => typeof v === 'string' || typeof v === 'number')
+						.join(', ');
 				}
 			}
 			return Object.keys(safeHeaders).length > 0 ? safeHeaders : undefined;
@@ -157,17 +171,20 @@ export async function SAI360ApiRequestWithDetails(
 		};
 
 		// Remove empty body (handle both object and string)
-		const isOauthEmptyBody = !body || (typeof body === 'object' && Object.keys(body).length === 0) || (typeof body === 'string' && body.length === 0);
+		const isOauthEmptyBody =
+			!body ||
+			(typeof body === 'object' && Object.keys(body).length === 0) ||
+			(typeof body === 'string' && body.length === 0);
 		if (isOauthEmptyBody) {
 			delete oauthOptions.body;
 		}
 
 		// httpRequestWithAuthentication will automatically attach the OAuth2 token
-		const fullResponse = await this.helpers.httpRequestWithAuthentication.call(
+		const fullResponse = (await this.helpers.httpRequestWithAuthentication.call(
 			this,
 			'sai360GrcOAuth2Api',
 			oauthOptions,
-		) as IDataObject;
+		)) as IDataObject;
 
 		// Note: OAuth2 headers may be modified by n8n, we capture what we can
 		return buildDetails(
@@ -178,6 +195,12 @@ export async function SAI360ApiRequestWithDetails(
 	}
 
 	if (authentication === 'basic') {
+		// Manual httpRequest() is intentional here — SAI360 basic auth uses a session-based flow:
+		// 1. POST credentials to /api/login to obtain a sessionid token
+		// 2. Attach that token as a `bwise-session` header on all subsequent requests
+		// 3. Retry with a fresh login on 401/403 (session expiry)
+		// This custom session lifecycle cannot be expressed via httpRequestWithAuthentication(),
+		// which only supports standard auth schemes (Basic, Bearer, OAuth2) managed by n8n.
 		// Get workflow-level static data
 		const staticData = this.getWorkflowStaticData('global') as IDataObject;
 
@@ -186,12 +209,12 @@ export async function SAI360ApiRequestWithDetails(
 
 		if (!sessionId) {
 			// No session → login
-			const loginResponse = await SAI360ApiLogin.call(
+			const loginResponse = (await SAI360ApiLogin.call(
 				this,
 				baseUrl,
 				credentials.username as string,
 				credentials.password as string,
-			) as IDataObject;
+			)) as IDataObject;
 
 			sessionId = (loginResponse.sessionid as string) ?? (loginResponse.token as string);
 
@@ -212,7 +235,7 @@ export async function SAI360ApiRequestWithDetails(
 
 		// Make the request
 		try {
-			const fullResponse = await this.helpers.httpRequest!(options) as IDataObject;
+			const fullResponse = (await this.helpers.httpRequest!(options)) as IDataObject;
 			return buildDetails(
 				requestHeaders,
 				body && Object.keys(body).length > 0 ? body : undefined,
@@ -224,12 +247,12 @@ export async function SAI360ApiRequestWithDetails(
 			if (error.statusCode === 401 || error.statusCode === 403) {
 				delete staticData.sessionId;
 
-				const loginResponse = await SAI360ApiLogin.call(
+				const loginResponse = (await SAI360ApiLogin.call(
 					this,
 					baseUrl,
 					credentials.username as string,
 					credentials.password as string,
-				) as IDataObject;
+				)) as IDataObject;
 
 				sessionId = (loginResponse.sessionid as string) ?? (loginResponse.token as string);
 				if (!sessionId) throw new Error('SAI360 login retry failed');
@@ -241,7 +264,7 @@ export async function SAI360ApiRequestWithDetails(
 				};
 				options.headers = retryHeaders;
 
-				const fullResponse = await this.helpers.httpRequest!(options) as IDataObject;
+				const fullResponse = (await this.helpers.httpRequest!(options)) as IDataObject;
 				return buildDetails(
 					retryHeaders,
 					body && Object.keys(body).length > 0 ? body : undefined,
@@ -258,6 +281,8 @@ export async function SAI360ApiRequestWithDetails(
 
 /**
  * Performs login for Basic Auth credential.
+ * Uses manual httpRequest() because this is the session-establishment step itself —
+ * no session token exists yet to authenticate with.
  */
 export async function SAI360ApiLogin(
 	this: IExecuteFunctions | IExecuteSingleFunctions | ILoadOptionsFunctions | IPollFunctions,
@@ -277,7 +302,7 @@ export async function SAI360ApiLogin(
 		body: body as unknown as IDataObject,
 		headers: {
 			'Content-Type': 'application/x-www-form-urlencoded',
-			'Accept': 'application/json',
+			Accept: 'application/json',
 		},
 		json: false,
 	};
@@ -293,14 +318,7 @@ export async function SAI360GetLog(
 	this: IExecuteFunctions | IExecuteSingleFunctions | ILoadOptionsFunctions | IPollFunctions,
 ): Promise<string> {
 	try {
-		const logResponse = await SAI360ApiRequestWithDetails.call(
-			this,
-			'GET',
-			'/api/log',
-			{},
-			{},
-			{},
-		);
+		const logResponse = await SAI360ApiRequestWithDetails.call(this, 'GET', '/api/log', {}, {}, {});
 		return parseSai360Messages(logResponse.response.body);
 	} catch {
 		return 'Unable to retrieve error log';

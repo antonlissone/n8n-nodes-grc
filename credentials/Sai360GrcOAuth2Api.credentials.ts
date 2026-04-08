@@ -10,7 +10,7 @@ export class Sai360GrcOAuth2Api implements ICredentialType {
 	displayName = 'SAI360 GRC OAuth2 API';
 
 	// Link to your community node's README
-	documentationUrl = 'https://github.com/org/@sai360/-grc?tab=readme-ov-file#credentials';
+	documentationUrl = 'https://github.com/antonlissone/n8n-nodes-grc?tab=readme-ov-file#credentials';
 
 	properties: INodeProperties[] = [
 		{

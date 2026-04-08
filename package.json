@@ -41,9 +41,8 @@
 			"dist/nodes/Sai360Grc/Sai360Grc.node.js"
 		]
 	},
-	"dependencies": {},
 	"devDependencies": {
-		"@n8n/node-cli": "^0.18.0",
+		"@n8n/node-cli": "^0.23.1",
 		"@types/node": "^18.0.0",
 		"concurrently": "^9.2.1",
 		"cross-env": "^10.1.0",
