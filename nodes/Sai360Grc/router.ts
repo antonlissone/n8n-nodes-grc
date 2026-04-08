@@ -9,10 +9,9 @@ import * as graphql from './resources/graphql';
 
 import type { SAI360 } from './node.type';
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 type ResourceModule = Record<
 	string,
-	{ execute: (this: IExecuteFunctions, index: number) => Promise<any> }
+	{ execute: (this: IExecuteFunctions, index: number) => Promise<INodeExecutionData[][]> }
 >;
 
 export async function router(this: IExecuteFunctions) {

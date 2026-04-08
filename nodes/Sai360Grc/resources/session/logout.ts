@@ -3,7 +3,6 @@ import { SAI360ApiRequestWithDetails } from '../../../../transport/';
 
 export const sessionLogoutDescription: INodeProperties[] = [];
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
 export async function execute(this: IExecuteFunctions, index: number) {
 	const endpoint = '/api/logout';
 
