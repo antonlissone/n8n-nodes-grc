@@ -7,23 +7,15 @@ export const sessionGetVersionInfoDescription: INodeProperties[] = [];
 export async function execute(this: IExecuteFunctions, index: number) {
 	const endpoint = '/versioninfo';
 
+	// HTTP errors (4xx/5xx) are converted to NodeApiError inside the transport layer.
 	const httpDetails = await SAI360ApiRequestWithDetails.call(this, 'GET', endpoint);
 	const response = httpDetails.response.body;
-
-	// --- Check for HTTP errors ---
-	const isError = httpDetails.response.isError || false;
-	const statusCode = httpDetails.response.statusCode || 0;
 
 	// Parse HTML response to extract text (simple regex-based extraction)
 	const text =
 		typeof response === 'string'
 			? response.replace(/<[^>]*>/g, '').trim()
 			: JSON.stringify(response);
-
-	// --- Handle errors ---
-	if (isError) {
-		throw new Error(`Request failed with status ${statusCode}: ${text}`);
-	}
 
 	const output: INodeExecutionData[] = [
 		{

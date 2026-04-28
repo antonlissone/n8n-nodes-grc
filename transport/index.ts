@@ -6,7 +6,9 @@ import type {
 	IExecuteSingleFunctions,
 	ILoadOptionsFunctions,
 	IPollFunctions,
+	JsonObject,
 } from 'n8n-workflow';
+import { NodeApiError } from 'n8n-workflow';
 
 export interface HttpRequestDetails {
 	request: {
@@ -152,6 +154,58 @@ export async function SAI360ApiRequestWithDetails(
 		};
 	};
 
+	// Centralised error surfacing: convert any 4xx/5xx response into a NodeApiError so
+	// n8n's executions panel renders the HTTP status, structured response, and any
+	// SAI360-specific error/warning messages. Set `suppressErrorThrow: true` in
+	// `optionsOverrides` to opt out (used by SAI360GetLog to avoid recursion when
+	// fetching diagnostics during an error path).
+	const throwOnHttpError = async (details: HttpRequestDetails): Promise<HttpRequestDetails> => {
+		if (!details.response.isError) return details;
+		if (optionsOverrides.suppressErrorThrow) return details;
+
+		const statusCode = details.response.statusCode ?? 0;
+		const responseBody = details.response.body;
+
+		// Build a human-readable description: SAI360 message arrays first, then raw body.
+		const saiMessages = parseSai360Messages(responseBody);
+		const rawBody =
+			typeof responseBody === 'string'
+				? responseBody
+				: responseBody !== null && responseBody !== undefined
+					? JSON.stringify(responseBody)
+					: '';
+		const descriptionParts: string[] = [];
+		if (saiMessages) descriptionParts.push(saiMessages);
+		else if (rawBody) descriptionParts.push(rawBody);
+
+		// For XML POSTs (e.g. saveXml), the response body is rarely informative — fetch
+		// /api/log for the real failure detail and append it to the description.
+		const requestContentType = String(
+			(details.request.headers?.['Content-Type'] as string) ??
+				(details.request.headers?.['content-type'] as string) ??
+				'',
+		).toLowerCase();
+		const isXmlPost = method === 'POST' && requestContentType.includes('xml');
+		if (isXmlPost) {
+			const apiLog = await SAI360GetLog.call(this);
+			if (apiLog && apiLog !== 'Unable to retrieve error log') {
+				descriptionParts.push(`API Log:\n${apiLog}`);
+			}
+		}
+
+		const errorPayload: IDataObject = {
+			statusCode,
+			body: responseBody as IDataObject | string | null,
+			headers: details.response.headers,
+		};
+
+		throw new NodeApiError(this.getNode(), errorPayload as JsonObject, {
+			message: `SAI360 request failed (${statusCode}) ${method} ${finalURL}`,
+			description: descriptionParts.join('\n\n') || undefined,
+			httpCode: String(statusCode),
+		});
+	};
+
 	// =========================
 	// AUTH SWITCH
 	// =========================
@@ -187,127 +241,96 @@ export async function SAI360ApiRequestWithDetails(
 		)) as IDataObject;
 
 		// Note: OAuth2 headers may be modified by n8n, we capture what we can
-		return buildDetails(
-			{ ...oauthHeaders, Authorization: 'Bearer [OAUTH2_TOKEN]' },
-			body && Object.keys(body).length > 0 ? body : undefined,
-			fullResponse,
+		return await throwOnHttpError(
+			buildDetails(
+				{ ...oauthHeaders, Authorization: 'Bearer [OAUTH2_TOKEN]' },
+				body && Object.keys(body).length > 0 ? body : undefined,
+				fullResponse,
+			),
 		);
 	}
 
 	if (authentication === 'basic') {
-		// Manual httpRequest() is intentional here — SAI360 basic auth uses a session-based flow:
-		// 1. POST credentials to /api/login to obtain a sessionid token
-		// 2. Attach that token as a `bwise-session` header on all subsequent requests
-		// 3. Retry with a fresh login on 401/403 (session expiry)
-		// This custom session lifecycle cannot be expressed via httpRequestWithAuthentication(),
-		// which only supports standard auth schemes (Basic, Bearer, OAuth2) managed by n8n.
-		// Get workflow-level static data
-		const staticData = this.getWorkflowStaticData('global') as IDataObject;
+		// Session-based auth (bwise-session) is handled by the credential class:
+		//   - preAuthentication() in Sai360GrcBasicApi.credentials.ts logs in to /api/login
+		//     and returns { sessionId } when sessionId is empty or expired.
+		//   - authenticate (generic) injects the bwise-session header on every request.
+		//   - On a 401, n8n automatically calls preAuthentication() again and retries once.
+		//
+		// We deliberately do NOT pass `ignoreHttpStatusErrors: true` here, because
+		// httpRequestWithAuthentication only triggers the re-auth/retry flow when the
+		// underlying request throws. We catch HTTP errors ourselves below and rebuild
+		// the HttpRequestDetails object to preserve the response shape downstream
+		// consumers expect (statusCode + isError instead of thrown exceptions).
+		const basicOptions: IHttpRequestOptions = { ...options };
+		delete basicOptions.ignoreHttpStatusErrors;
 
-		// Reuse sessionId if exists
-		let sessionId = staticData.sessionId as string | undefined;
-
-		if (!sessionId) {
-			// No session → login
-			const loginResponse = (await SAI360ApiLogin.call(
-				this,
-				baseUrl,
-				credentials.username as string,
-				credentials.password as string,
-			)) as IDataObject;
-
-			sessionId = (loginResponse.sessionid as string) ?? (loginResponse.token as string);
-
-			if (!sessionId) {
-				throw new Error('SAI360 login did not return a sessionId or token');
-			}
-
-			// Store it in workflow-level static data
-			staticData.sessionId = sessionId;
-		}
-
-		// Add session header
+		// The bwise-session header is injected by the credential's `authenticate` block;
+		// we only show a placeholder in the details we return for logging/debugging.
 		const requestHeaders: IDataObject = {
 			...baseHeaders,
-			'bwise-session': sessionId,
+			'bwise-session': '[SESSION]',
 		};
-		options.headers = requestHeaders;
 
-		// Make the request
 		try {
-			const fullResponse = (await this.helpers.httpRequest!(options)) as IDataObject;
-			return buildDetails(
-				requestHeaders,
-				body && Object.keys(body).length > 0 ? body : undefined,
-				fullResponse,
-			);
-		} catch (err: unknown) {
-			const error = err as { statusCode?: number };
-			// Retry once if session expired
-			if (error.statusCode === 401 || error.statusCode === 403) {
-				delete staticData.sessionId;
+			const fullResponse = (await this.helpers.httpRequestWithAuthentication.call(
+				this,
+				'sai360GrcBasicApi',
+				basicOptions,
+			)) as IDataObject;
 
-				const loginResponse = (await SAI360ApiLogin.call(
-					this,
-					baseUrl,
-					credentials.username as string,
-					credentials.password as string,
-				)) as IDataObject;
-
-				sessionId = (loginResponse.sessionid as string) ?? (loginResponse.token as string);
-				if (!sessionId) throw new Error('SAI360 login retry failed');
-
-				staticData.sessionId = sessionId;
-				const retryHeaders: IDataObject = {
-					...baseHeaders,
-					'bwise-session': sessionId,
-				};
-				options.headers = retryHeaders;
-
-				const fullResponse = (await this.helpers.httpRequest!(options)) as IDataObject;
-				return buildDetails(
-					retryHeaders,
+			return await throwOnHttpError(
+				buildDetails(
+					requestHeaders,
 					body && Object.keys(body).length > 0 ? body : undefined,
 					fullResponse,
-				);
-			}
+				),
+			);
+		} catch (err: unknown) {
+			// Re-throw NodeApiErrors raised by throwOnHttpError unchanged so the n8n UI
+			// keeps the structured payload we built.
+			if (err instanceof NodeApiError) throw err;
 
-			throw err;
+			// Otherwise httpRequestWithAuthentication threw a low-level transport error
+			// (network failure, or a 4xx/5xx that escaped because we removed
+			// ignoreHttpStatusErrors). Reconstruct an HttpRequestDetails and run it
+			// through throwOnHttpError so the failure surfaces with a consistent shape.
+			const error = err as {
+				statusCode?: number;
+				httpCode?: string;
+				cause?: { response?: { status?: number; headers?: unknown; data?: unknown } };
+				response?: { status?: number; headers?: unknown; body?: unknown; data?: unknown };
+				message?: string;
+			};
+
+			const statusCode =
+				error.statusCode ??
+				error.response?.status ??
+				error.cause?.response?.status ??
+				(error.httpCode ? Number(error.httpCode) : undefined);
+
+			// Not an HTTP error we can map — re-throw the original.
+			if (!statusCode) throw err;
+
+			const responseBody =
+				error.response?.body ?? error.response?.data ?? error.cause?.response?.data ?? error.message;
+			const responseHeaders = error.response?.headers ?? error.cause?.response?.headers;
+
+			return await throwOnHttpError(
+				buildDetails(
+					requestHeaders,
+					body && Object.keys(body).length > 0 ? body : undefined,
+					{
+						statusCode,
+						headers: responseHeaders as IDataObject | undefined,
+						body: responseBody,
+					},
+				),
+			);
 		}
 	}
 
 	throw new Error(`Unsupported auth type: ${authentication}`);
-}
-
-/**
- * Performs login for Basic Auth credential.
- * Uses manual httpRequest() because this is the session-establishment step itself —
- * no session token exists yet to authenticate with.
- */
-export async function SAI360ApiLogin(
-	this: IExecuteFunctions | IExecuteSingleFunctions | ILoadOptionsFunctions | IPollFunctions,
-	baseUrl: string,
-	username: string,
-	password: string,
-) {
-	const finalURL = `${baseUrl}/api/login`;
-
-	const body = new URLSearchParams();
-	body.append('username', username);
-	body.append('password', password);
-
-	const options: IHttpRequestOptions = {
-		method: 'POST',
-		url: finalURL,
-		body: body as unknown as IDataObject,
-		headers: {
-			'Content-Type': 'application/x-www-form-urlencoded',
-			Accept: 'application/json',
-		},
-		json: false,
-	};
-
-	return await this.helpers.httpRequest!(options);
 }
 
 /**
@@ -318,7 +341,17 @@ export async function SAI360GetLog(
 	this: IExecuteFunctions | IExecuteSingleFunctions | ILoadOptionsFunctions | IPollFunctions,
 ): Promise<string> {
 	try {
-		const logResponse = await SAI360ApiRequestWithDetails.call(this, 'GET', '/api/log', {}, {}, {});
+		// suppressErrorThrow: GET /api/log is itself called from inside the error path.
+		// We never want it to raise — return an empty marker on failure so the caller
+		// can decide whether to mention it in the user-facing description.
+		const logResponse = await SAI360ApiRequestWithDetails.call(
+			this,
+			'GET',
+			'/api/log',
+			{},
+			{},
+			{ suppressErrorThrow: true },
+		);
 		return parseSai360Messages(logResponse.response.body);
 	} catch {
 		return 'Unable to retrieve error log';

@@ -208,19 +208,8 @@ export async function execute(this: IExecuteFunctions, index: number) {
 		},
 	);
 
-	// Check for HTTP errors
-	if (response.response.isError) {
-		const errorBody = response.response.body;
-		const errorMessage = typeof errorBody === 'object' && errorBody !== null
-			? JSON.stringify(errorBody)
-			: String(errorBody);
-		throw new NodeOperationError(
-			this.getNode(),
-			`GraphQL request failed with status ${response.response.statusCode}: ${errorMessage}`,
-			{ itemIndex: index },
-		);
-	}
-
+	// HTTP errors (4xx/5xx) are converted to NodeApiError inside the transport layer.
+	// Below we only check for GraphQL-level errors (200 OK with `errors` in body).
 	const graphqlResponse = response.response.body as IDataObject;
 
 	// Check for GraphQL errors

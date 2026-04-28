@@ -33,25 +33,12 @@ export async function execute(this: IExecuteFunctions, index: number) {
 	// --- Query table records (JSON endpoint) ---
 	const endpoint = `/api/modelinstance/${encodeURIComponent(tableName)}/json`;
 
+	// HTTP errors (4xx/5xx) are converted to NodeApiError inside the transport layer.
 	const httpDetails = await SAI360ApiRequestWithDetails.call(this, 'GET', endpoint);
-
-	// --- Check for HTTP errors ---
-	const isError = httpDetails.response.isError || false;
-	const statusCode = httpDetails.response.statusCode || 0;
-
-	// --- Extract items from response ---
 	const responseBody = httpDetails.response.body;
-	const items = Array.isArray(responseBody) 
-		? responseBody 
+	const items = Array.isArray(responseBody)
+		? responseBody
 		: ((responseBody as IDataObject)?.items || (responseBody as IDataObject)?.instances || [responseBody]);
-	
-	// --- Handle errors ---
-	if (isError) {
-		const errorMessage = typeof responseBody === 'object' && responseBody !== null
-			? JSON.stringify(responseBody)
-			: String(responseBody);
-		throw new Error(`Request failed with status ${statusCode}: ${errorMessage}`);
-	}
 
 	const executionData = this.helpers.constructExecutionMetaData(
 		this.helpers.returnJsonArray(items as IDataObject[]),

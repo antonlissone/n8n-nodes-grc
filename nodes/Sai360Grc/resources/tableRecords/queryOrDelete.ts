@@ -1,4 +1,5 @@
 import type { IDataObject, IExecuteFunctions, INodeExecutionData, INodeProperties } from 'n8n-workflow';
+import { NodeOperationError } from 'n8n-workflow';
 
 import { SAI360ApiRequestWithDetails } from '../../../../transport';
 
@@ -162,6 +163,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 		.map(([key, value]) => `${encodeURIComponent(key)}=${encodeURIComponent(String(value))}`)
 		.join('&');
 
+	// HTTP errors (4xx/5xx) are converted to NodeApiError inside the transport layer.
 	const postResponse = await SAI360ApiRequestWithDetails.call(
 		this,
 		'POST',
@@ -173,16 +175,8 @@ export async function execute(this: IExecuteFunctions, index: number) {
 			headers: {
 				'Content-Type': 'application/x-www-form-urlencoded',
 			},
-		}
+		},
 	);
-    
-	// --- Check for HTTP errors on POST ---
-	if (postResponse.response.isError) {
-		const errorMessage = typeof postResponse.response.body === 'object' && postResponse.response.body !== null
-			? JSON.stringify(postResponse.response.body)
-			: String(postResponse.response.body);
-		throw new Error(`POST request failed with status ${postResponse.response.statusCode}: ${errorMessage}`);
-	}
 
 	// --- Extract queryId from the response ---
 	let queryId: number;
@@ -191,7 +185,9 @@ export async function execute(this: IExecuteFunctions, index: number) {
 	if (typeof postBody === 'number') {
 		queryId = postBody;
 	} else {
-		throw new Error('Unable to extract queryId from POST response');
+		throw new NodeOperationError(this.getNode(), 'Unable to extract queryId from POST response', {
+			itemIndex: index,
+		});
 	}
 
 	// --- Step 2: GET or DELETE /api/instances/query/{queryId} ---
@@ -212,22 +208,15 @@ export async function execute(this: IExecuteFunctions, index: number) {
 		}
 	}
 
+	// HTTP errors (4xx/5xx) are converted to NodeApiError inside the transport layer.
 	const actionResponse = await SAI360ApiRequestWithDetails.call(
 		this,
 		httpMethod,
 		endpoint,
 		{},
 		{},
-		{ json: false }
+		{ json: false },
 	);
-
-	// --- Check for HTTP errors ---
-	if (actionResponse.response.isError) {
-		const errorMessage = typeof actionResponse.response.body === 'object' && actionResponse.response.body !== null
-			? JSON.stringify(actionResponse.response.body)
-			: String(actionResponse.response.body);
-		throw new Error(`${httpMethod} request failed with status ${actionResponse.response.statusCode}: ${errorMessage}`);
-	}
 
 	const output: INodeExecutionData[] = [
 		{

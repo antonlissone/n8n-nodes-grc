@@ -20,7 +20,7 @@ export const datastorePrimeForPaginationDescription: INodeProperties[] = [
 		default: '',
 		required: true,
 		placeholder: 'Solutions_COI_Disclosures',
-		description: 'Datastore Identifier to prime for execution (paginated)',
+		description: 'Datastore identifier to prime for execution (paginated)',
 	},
 ];
 
@@ -29,20 +29,9 @@ export async function execute(this: IExecuteFunctions, index: number) {
 
 	const endpoint = '/api/griddata/query/datastore!' + encodeURIComponent(datastoreId);
 
+	// HTTP errors (4xx/5xx) are converted to NodeApiError inside the transport layer.
 	const httpDetails = await SAI360ApiRequestWithDetails.call(this, 'POST', endpoint);
-
-	// --- Check for HTTP errors ---
-	const isError = httpDetails.response.isError || false;
-	const statusCode = httpDetails.response.statusCode || 0;
 	const responseBody = httpDetails.response.body;
-
-	// --- Handle errors ---
-	if (isError) {
-		const errorMessage = typeof responseBody === 'object' && responseBody !== null
-			? JSON.stringify(responseBody)
-			: String(responseBody);
-		throw new Error(`Request failed with status ${statusCode}: ${errorMessage}`);
-	}
 
 	const executionData = this.helpers.constructExecutionMetaData(
 		this.helpers.returnJsonArray([responseBody as IDataObject]),

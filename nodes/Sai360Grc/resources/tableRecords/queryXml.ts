@@ -187,18 +187,8 @@ export async function execute(this: IExecuteFunctions, index: number) {
 		}
 	);
 
-	// --- Check for HTTP errors ---
-	const isError = httpDetails.response.isError || false;
-	const statusCode = httpDetails.response.statusCode || 0;
+	// HTTP errors (4xx/5xx) are converted to NodeApiError inside the transport layer.
 	const responseBody = httpDetails.response.body;
-
-	// --- Handle errors ---
-	if (isError) {
-		const errorMessage = typeof responseBody === 'object' && responseBody !== null
-			? JSON.stringify(responseBody)
-			: String(responseBody);
-		throw new Error(`Request failed with status ${statusCode}: ${errorMessage}`);
-	}
 
 	const output: INodeExecutionData[] = [
 		{

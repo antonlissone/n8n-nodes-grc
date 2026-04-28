@@ -1,6 +1,6 @@
 import type { IExecuteFunctions, INodeExecutionData, INodeProperties } from 'n8n-workflow';
 
-import { SAI360ApiRequestWithDetails, SAI360GetLog } from '../../../../transport';
+import { SAI360ApiRequestWithDetails } from '../../../../transport';
 
 const showOnlyForTableRecordsSaveXml = {
 	operation: ['saveXml'],
@@ -51,6 +51,9 @@ export async function execute(this: IExecuteFunctions, index: number) {
 	// --- Save table records (XML endpoint) ---
 	const endpoint = `/api/instances?class=${encodeURIComponent(tableName)}`;
 
+	// HTTP errors (4xx/5xx) are converted to NodeApiError inside the transport layer.
+	// For XML POSTs the transport additionally fetches /api/log and appends it to
+	// the error description (the XML response body is rarely informative).
 	const httpDetails = await SAI360ApiRequestWithDetails.call(
 		this,
 		'POST',
@@ -65,21 +68,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 			},
 		},
 	);
-
-	// --- Check for HTTP errors ---
-	const isError = httpDetails.response.isError || false;
-	const statusCode = httpDetails.response.statusCode || 0;
 	const responseBody = httpDetails.response.body;
-
-	// --- Handle errors ---
-	if (isError) {
-		// Fetch detailed error log from SAI360
-		const errorLog = await SAI360GetLog.call(this);
-		const errorDetail = typeof responseBody === 'string' ? responseBody : String(responseBody);
-		throw new Error(
-			`Request failed with status ${statusCode}:\n${errorDetail}\n\nAPI Log:\n${errorLog}`,
-		);
-	}
 
 	const output: INodeExecutionData[] = [
 		{
